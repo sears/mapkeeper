@@ -6,10 +6,10 @@ THRIFT_SRC = mapkeeper_constants.cpp \
              mapkeeper_types.cpp \
              mapkeeper_types.h \
 
-EXECUTABLE = mapkeeper_stlmap
+EXECUTABLE = mapkeeper_client
 
 all : $(THRIFT_SRC)
-	g++ -Wall -o $(EXECUTABLE) *cpp -I /usr/local/include/thrift -L /usr/local/lib -lthrift
+	g++ -o $(EXECUTABLE) *cpp -I /usr/local/include/thrift -L /usr/local/lib -lthrift
 
 $(THRIFT_SRC) : thrift
 	ln -sf $(THRIFT_DIR)/$@ $@
