@@ -11,10 +11,12 @@ EXECUTABLE = mapkeeper_stlmap
 all : $(THRIFT_SRC)
 	g++ -o $(EXECUTABLE) *cpp -I /usr/local/include/thrift -L /usr/local/lib -lthrift
 
-$(THRIFT_SRC) :
-	ln -s $(THRIFT_DIR)/$@ $@
+$(THRIFT_SRC) : thrift
+	ln -sf $(THRIFT_DIR)/$@ $@
 
+thrift:
+	make -C ../thrift
 run : 
 	LD_LIBRARY_PATH=/usr/local/lib ./$(EXECUTABLE)
 clean :
-	-rm $(THRIFT_SRC) $(EXECUTABLE) *o 
+	- rm $(THRIFT_SRC) $(EXECUTABLE) *o 
