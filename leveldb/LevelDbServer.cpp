@@ -108,6 +108,20 @@ public:
     }
 
     void get(BinaryResponse& _return, const std::string& mapName, const std::string& key) {
+        boost::shared_lock< boost::shared_mutex> readLock(mutex_);;
+        boost::ptr_map<std::string, leveldb::DB>::iterator itr = maps_.find(mapName);
+        if (itr == maps_.end()) {
+            _return.responseCode = ResponseCode::MapNotFound;
+            return;
+        }
+        leveldb::Status status = itr->second->Get(leveldb::ReadOptions(), key, &(_return.value));
+        if (status.IsNotFound()) {
+            _return.responseCode = ResponseCode::RecordNotFound;
+            return;
+        } else if (!status.ok()) {
+            _return.responseCode = ResponseCode::Error;
+            return;
+        }
         _return.responseCode = ResponseCode::Success;
     }
 

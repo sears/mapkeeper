@@ -6,7 +6,7 @@ THRIFT_SRC = mapkeeper_constants.cpp \
              mapkeeper_types.cpp \
              mapkeeper_types.h \
 
-EXECUTABLE = mapkeeper_stlmap
+EXECUTABLE = mapkeeper_leveldb
 
 all : $(THRIFT_SRC)
 	g++ -Wall -o $(EXECUTABLE) *cpp -I /usr/local/include/boost_1_47_0/ -I /usr/local/include/thrift -L /usr/local/lib \
@@ -18,6 +18,6 @@ $(THRIFT_SRC) : thrift
 thrift:
 	make -C ../thrift
 run : 
-	LD_LIBRARY_PATH=/usr/local/lib ./$(EXECUTABLE)
+	LD_LIBRARY_PATH=/usr/local/lib:/usr/local/include/boost_1_47_0/stage/lib/ ./$(EXECUTABLE)
 clean :
 	- rm $(THRIFT_SRC) $(EXECUTABLE) *o 
