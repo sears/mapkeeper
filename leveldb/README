@@ -1,0 +1,11 @@
+Requirements:
+- thrift
+- libevent
+- boost
+- leveldb
+
+$ svn checkout http://leveldb.googlecode.com/svn/trunk/ leveldb-read-only
+$ cd leveldb-read-only/
+$ make
+$ sudo cp libleveldb.a /usr/local/lib
+$ sudo cp -r include/leveldb /usr/local/include
