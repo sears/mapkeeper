@@ -8,6 +8,10 @@
 #include "MapKeeper.h"
 #include <leveldb/db.h>
 #include <boost/ptr_container/ptr_map.hpp>
+#include <boost/thread/shared_mutex.hpp>
+#include <sys/types.h>
+#include <dirent.h>
+#include <errno.h>
 
 #include <protocol/TBinaryProtocol.h>
 #include <server/TSimpleServer.h>
@@ -40,14 +44,47 @@ public:
     }
 
     ResponseCode::type addMap(const std::string& mapName) {
+        leveldb::DB* db;
+        leveldb::Options options;
+        options.create_if_missing = true;
+        options.error_if_exists = true;
+        leveldb::Status status = leveldb::DB::Open(options, directoryName_ + mapName, &db);
+        if (!status.ok()) {
+            // TODO check return code
+            printf("status: %s\n", status.ToString().c_str());
+            return ResponseCode::Error;
+        }
+        std::string mapName_ = mapName;
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
+        maps_.insert(mapName_, db);
         return ResponseCode::Success;
     }
 
     ResponseCode::type dropMap(const std::string& mapName) {
+        std::string mapName_ = mapName;
+        boost::ptr_map<std::string, leveldb::DB>::iterator itr;
+        boost::unique_lock< boost::shared_mutex> writeLock(mutex_);;
+        itr = maps_.find(mapName_);
+        if (itr == maps_.end()) {
+            return ResponseCode::MapNotFound;
+        }
+        maps_.erase(itr);
         return ResponseCode::Success;
     }
 
     void listMaps(StringListResponse& _return) {
+        DIR *dp;
+        struct dirent *dirp;
+        if((dp  = opendir(directoryName_.c_str())) == NULL) {
+            _return.responseCode = ResponseCode::Success;
+            return;
+        }
+
+        while ((dirp = readdir(dp)) != NULL) {
+            _return.values.push_back(std::string(dirp->d_name));
+        }
+        closedir(dp);
+        _return.responseCode = ResponseCode::Success;
     }
 
     void scan(RecordListResponse& _return, const std::string& mapName, const ScanOrder::type order,
@@ -75,6 +112,17 @@ public:
     }
 
     ResponseCode::type put(const std::string& mapName, const std::string& key, const std::string& value) {
+        std::string mapName_ = mapName;
+        boost::ptr_map<std::string, leveldb::DB>::iterator itr;
+        boost::shared_lock< boost::shared_mutex> readLock(mutex_);;
+        itr = maps_.find(mapName_);
+        if (itr == maps_.end()) {
+            return ResponseCode::MapNotFound;
+        }
+        leveldb::Status status = itr->second->Put(leveldb::WriteOptions(), key, value);
+        if (!status.ok()) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
@@ -93,6 +141,7 @@ public:
 private:
     std::string directoryName_; // directory to store db files.
     boost::ptr_map<std::string, leveldb::DB> maps_;
+    boost::shared_mutex mutex_; // protect map_
 };
 
 int main(int argc, char **argv) {
