@@ -133,7 +133,11 @@ public:
         if (itr == maps_.end()) {
             return ResponseCode::MapNotFound;
         }
-        leveldb::Status status = itr->second->Put(leveldb::WriteOptions(), key, value);
+
+        leveldb::WriteOptions options;
+        options.sync = true;
+        leveldb::Status status = itr->second->Put(options, key, value);
+
         if (!status.ok()) {
             return ResponseCode::Error;
         }
@@ -141,10 +145,50 @@ public:
     }
 
     ResponseCode::type insert(const std::string& mapName, const std::string& key, const std::string& value) {
+        // TODO Get and Put should be within a same transaction
+        boost::shared_lock< boost::shared_mutex> readLock(mutex_);;
+        boost::ptr_map<std::string, leveldb::DB>::iterator itr = maps_.find(mapName);
+        if (itr == maps_.end()) {
+            return ResponseCode::MapNotFound;
+        }
+        std::string recordValue;
+        leveldb::Status status = itr->second->Get(leveldb::ReadOptions(), key, &recordValue);
+        if (status.ok()) {
+            return ResponseCode::RecordExists;
+        } else if (!status.IsNotFound()) {
+            return ResponseCode::Error;
+        }
+
+        leveldb::WriteOptions options;
+        options.sync = true;
+        status = itr->second->Put(options, key, value);
+        if (!status.ok()) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
     ResponseCode::type update(const std::string& mapName, const std::string& key, const std::string& value) {
+        // TODO Get and Put should be within a same transaction
+        boost::shared_lock< boost::shared_mutex> readLock(mutex_);;
+        boost::ptr_map<std::string, leveldb::DB>::iterator itr = maps_.find(mapName);
+        if (itr == maps_.end()) {
+            return ResponseCode::MapNotFound;
+        }
+        std::string recordValue;
+        leveldb::Status status = itr->second->Get(leveldb::ReadOptions(), key, &recordValue);
+        if (status.IsNotFound()) {
+            return ResponseCode::RecordNotFound;
+        } else if (!status.ok()) {
+            return ResponseCode::Error;
+        }
+
+        leveldb::WriteOptions options;
+        options.sync = true;
+        status = itr->second->Put(options, key, value);
+        if (!status.ok()) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
@@ -154,7 +198,9 @@ public:
         if (itr == maps_.end()) {
             return ResponseCode::MapNotFound;
         }
-        leveldb::Status status = itr->second->Delete(leveldb::WriteOptions(), key);
+        leveldb::WriteOptions options;
+        options.sync = true;
+        leveldb::Status status = itr->second->Delete(options, key);
         if (status.IsNotFound()) {
             return ResponseCode::RecordNotFound;
         } else if (!status.ok()) {
