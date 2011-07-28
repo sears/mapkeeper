@@ -149,6 +149,17 @@ public:
     }
 
     ResponseCode::type remove(const std::string& mapName, const std::string& key) {
+        boost::shared_lock< boost::shared_mutex> readLock(mutex_);;
+        boost::ptr_map<std::string, leveldb::DB>::iterator itr = maps_.find(mapName);
+        if (itr == maps_.end()) {
+            return ResponseCode::MapNotFound;
+        }
+        leveldb::Status status = itr->second->Delete(leveldb::WriteOptions(), key);
+        if (status.IsNotFound()) {
+            return ResponseCode::RecordNotFound;
+        } else if (!status.ok()) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
