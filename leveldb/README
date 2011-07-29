@@ -9,7 +9,13 @@ Requirements:
     $ ./configure --prefix=/usr/local
     $ make
     $ sudo make install
+
 - boost
+    $ wget http://sourceforge.net/projects/boost/files/boost/1.47.0/boost_1_47_0.tar.gz/download
+    $ tar xfvz boost_1_47_0.tar.gz
+    $ cd boost_1_47_0
+    $ ./bootstrap.sh --prefix=/usr/local
+    $ sudo ./b2 install
 
 - thrift
 
