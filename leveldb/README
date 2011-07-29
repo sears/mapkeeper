@@ -1,11 +1,29 @@
 Requirements:
-- thrift
+===================
+
 - libevent
+
+    $ wget http://monkey.org/~provos/libevent-2.0.12-stable.tar.gz
+    $ tar xfvz libevent-2.0.12-stable.tar.gz
+    $ cd libevent-2.0.12-stable
+    $ ./configure --prefix=/usr/local
+    $ make
+    $ sudo make install
+
+- thrift
+
+    $ wget http://apache.petsads.us//thrift/0.6.1/thrift-0.6.1.tar.gz
+    $ tar xfvz thrift-0.6.1.tar.gz
+    $ cd thrift-0.6.1
+    $ ./configure --prefix=/usr/local
+    $ make
+    $ sudo make install
+
 - boost
 - leveldb
 
-$ svn checkout http://leveldb.googlecode.com/svn/trunk/ leveldb-read-only
-$ cd leveldb-read-only/
-$ make
-$ sudo cp libleveldb.a /usr/local/lib
-$ sudo cp -r include/leveldb /usr/local/include
+    $ svn checkout http://leveldb.googlecode.com/svn/trunk/ leveldb-read-only
+    $ cd leveldb-read-only/
+    $ make
+    $ sudo cp libleveldb.a /usr/local/lib
+    $ sudo cp -r include/leveldb /usr/local/include
