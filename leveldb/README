@@ -10,6 +10,8 @@ Requirements:
     $ make
     $ sudo make install
 
+- boost
+
 - thrift
 
     $ wget http://apache.petsads.us//thrift/0.6.1/thrift-0.6.1.tar.gz
@@ -19,7 +21,6 @@ Requirements:
     $ make
     $ sudo make install
 
-- boost
 - leveldb
 
     $ svn checkout http://leveldb.googlecode.com/svn/trunk/ leveldb-read-only
