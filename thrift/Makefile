@@ -3,4 +3,4 @@ all::
 	make -C gen-cpp
 
 clean::
-	rm -rf gen-cpp/* gen-java/*
+	rm -rf gen-cpp/*[cpp,h,o] gen-java/*
