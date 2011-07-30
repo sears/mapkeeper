@@ -1,0 +1,11 @@
+Requirements:
+===================
+
+- mysql-connector
+
+    $ wget http://dev.mysql.com/get/Downloads/Connector-C/mysql-connector-c-6.0.2.tar.gz/from/http://mysql.he.net/
+    $ tar xfvz mysql-connector-c-6.0.2.tar.gz
+    $ cd mysql-connector-c-6.0.2
+    $ cmake -G "Unix Makefiles"
+    $ make
+    $ sudo make install
