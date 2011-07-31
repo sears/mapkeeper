@@ -1,6 +1,3 @@
-Main-Class: App
-Class-Path: /home/y/lib/jars/libthrift.jar /home/y/lib/jars/dht_thrift.jar \
-            /home/y/lib/jars/slf4j-api-1.5.8.jar  /home/y/lib/jars/slf4j-log4j12-1.5.8.jar \
-            /home/y/lib/jars/log4j.jar /home/y/lib/jars/je-4.1.6.jar \
-            /home/y/conf/dht_java_bdb_server/
-
+Main-Class: BdbJavaServer
+Class-Path: ../lib/je-4.1.10.jar  ../lib/libthrift-0.6.1.jar  ../lib/mapkeeper.jar  ../lib/slf4j-api-1.5.8.jar \
+            ../lib/slf4j-log4j12-1.5.8.jar ../lib/log4j-1.2.14.jar 

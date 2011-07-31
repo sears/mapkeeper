@@ -491,6 +491,9 @@ class BdbJavaServer implements MapKeeper.Iface {
             txn.abort();
             return ResponseCode.Error;
         } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
             this.readLock.unlock();
         }
     }
