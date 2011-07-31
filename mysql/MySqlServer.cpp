@@ -97,6 +97,21 @@ public:
     }
 
     void get(BinaryResponse& _return, const std::string& mapName, const std::string& key) {
+        boost::thread_specific_ptr<MySqlClient> mysql;
+        if (mysql.get() == NULL) {
+            mysql.reset(new MySqlClient("localhost", 3306));
+        }
+        MySqlClient::ResponseCode rc = mysql->get(mapName, key, _return.value);
+        if (rc == MySqlClient::TableNotFound) {
+            _return.responseCode = ResponseCode::MapNotFound;
+            return;
+        } else if (rc == MySqlClient::RecordNotFound) {
+            _return.responseCode = ResponseCode::RecordNotFound;
+            return;
+        } else if (rc != MySqlClient::Success) {
+            _return.responseCode = ResponseCode::Error;
+            return;
+        }
         _return.responseCode = ResponseCode::Success;
     }
 
@@ -105,14 +120,50 @@ public:
     }
 
     ResponseCode::type insert(const std::string& mapName, const std::string& key, const std::string& value) {
+        boost::thread_specific_ptr<MySqlClient> mysql;
+        if (mysql.get() == NULL) {
+            mysql.reset(new MySqlClient("localhost", 3306));
+        }
+        MySqlClient::ResponseCode rc = mysql->insert(mapName, key, value);
+        if (rc == MySqlClient::TableNotFound) {
+            return ResponseCode::MapNotFound;
+        } else if (rc == MySqlClient::RecordExists) {
+            return ResponseCode::RecordExists;
+        } else if (rc != MySqlClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
     ResponseCode::type update(const std::string& mapName, const std::string& key, const std::string& value) {
+        boost::thread_specific_ptr<MySqlClient> mysql;
+        if (mysql.get() == NULL) {
+            mysql.reset(new MySqlClient("localhost", 3306));
+        }
+        MySqlClient::ResponseCode rc = mysql->update(mapName, key, value);
+        if (rc == MySqlClient::TableNotFound) {
+            return ResponseCode::MapNotFound;
+        } else if (rc == MySqlClient::RecordNotFound) {
+            return ResponseCode::RecordNotFound;
+        } else if (rc != MySqlClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
     ResponseCode::type remove(const std::string& mapName, const std::string& key) {
+        boost::thread_specific_ptr<MySqlClient> mysql;
+        if (mysql.get() == NULL) {
+            mysql.reset(new MySqlClient("localhost", 3306));
+        }
+        MySqlClient::ResponseCode rc = mysql->remove(mapName, key);
+        if (rc == MySqlClient::TableNotFound) {
+            return ResponseCode::MapNotFound;
+        } else if (rc == MySqlClient::RecordNotFound) {
+            return ResponseCode::RecordNotFound;
+        } else if (rc != MySqlClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
