@@ -26,15 +26,45 @@ int main(int argc, char **argv) {
 
     // these methods can throw apache::thrift::TException.
     transport->open();
+
+    // test ping
     assert(mapkeeper::ResponseCode::Success == client.ping());
+
+    // test addMap
     assert(mapkeeper::ResponseCode::Success == client.addMap("db1"));
+    assert(mapkeeper::ResponseCode::MapExists == client.addMap("db1"));
+
+    // test insert
     assert(mapkeeper::ResponseCode::Success == client.insert("db1", "k1", "v1"));
+    assert(mapkeeper::ResponseCode::RecordExists == client.insert("db1", "k1", "v1"));
+    assert(mapkeeper::ResponseCode::MapNotFound == client.insert("db2", "k1", "v1"));
+
+    // test get
     client.get(getResponse, "db1", "k1");
     assert(getResponse.responseCode == mapkeeper::ResponseCode::Success);
     assert(getResponse.value == "v1");
+    client.get(getResponse, "db2", "k1");
+    assert(getResponse.responseCode == mapkeeper::ResponseCode::MapNotFound);
+    client.get(getResponse, "db1", "k2");
+    assert(getResponse.responseCode == mapkeeper::ResponseCode::RecordNotFound);
+
+    // test update
     assert(mapkeeper::ResponseCode::Success == client.update("db1", "k1", "v2"));
+    assert(mapkeeper::ResponseCode::MapNotFound == client.update("db2", "k1", "v1"));
+    assert(mapkeeper::ResponseCode::RecordNotFound == client.update("db1", "k2", "v2"));
+    client.get(getResponse, "db1", "k1");
+    assert(getResponse.responseCode == mapkeeper::ResponseCode::Success);
+    assert(getResponse.value == "v2");
+ 
+    // test remove
     assert(mapkeeper::ResponseCode::Success == client.remove("db1", "k1"));
+    assert(mapkeeper::ResponseCode::RecordNotFound== client.remove("db1", "k1"));
+    assert(mapkeeper::ResponseCode::RecordNotFound== client.remove("db1", "k2"));
+    assert(mapkeeper::ResponseCode::MapNotFound == client.remove("db2", "k1"));
+
+    // test dropMap
     assert(mapkeeper::ResponseCode::Success == client.dropMap("db1"));
+    assert(mapkeeper::ResponseCode::MapNotFound == client.dropMap("db1"));
     transport->close();
     return 0;
 }
