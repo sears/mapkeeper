@@ -1,0 +1,15 @@
+Requirements:
+===================
+
+- java
+
+- ant 
+
+- thrift
+
+    $ wget http://apache.petsads.us//thrift/0.6.1/thrift-0.6.1.tar.gz
+    $ tar xfvz thrift-0.6.1.tar.gz
+    $ cd thrift-0.6.1
+    $ ./configure --prefix=/usr/local
+    $ make
+    $ sudo make install
