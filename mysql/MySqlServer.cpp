@@ -1,18 +1,10 @@
 /**
  * This is a implementation of the mapkeeper interface that uses 
- * leveldb.
- *
- * http://leveldb.googlecode.com/svn/trunk/doc/index.html
+ * mysql.
  */
 #include <cstdio>
 #include "MapKeeper.h"
-#include <leveldb/db.h>
-#include <boost/ptr_container/ptr_map.hpp>
-#include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/tss.hpp>
-#include <sys/types.h>
-#include <dirent.h>
-#include <errno.h>
 #include "MySqlClient.h"
 
 #include <protocol/TBinaryProtocol.h>
@@ -37,7 +29,9 @@ using namespace mapkeeper;
 
 class MySqlServer: virtual public MapKeeperIf {
 public:
-    MySqlServer() {
+    MySqlServer(const std::string& host, uint32_t port) :
+        host_(host),
+        port_(port) {
     }
 
     ResponseCode::type ping() {
@@ -45,11 +39,8 @@ public:
     }
 
     ResponseCode::type addMap(const std::string& mapName) {
-        boost::thread_specific_ptr<MySqlClient> mysql;
-        if (mysql.get() == NULL) {
-            mysql.reset(new MySqlClient("localhost", 3306));
-        }
-        MySqlClient::ResponseCode rc = mysql->createTable(mapName);
+        initMySqlClient();
+        MySqlClient::ResponseCode rc = mysql_->createTable(mapName);
         if (rc == MySqlClient::TableExists) {
             return ResponseCode::MapExists;
         } else if (rc != MySqlClient::Success) {
@@ -59,11 +50,8 @@ public:
     }
 
     ResponseCode::type dropMap(const std::string& mapName) {
-        boost::thread_specific_ptr<MySqlClient> mysql;
-        if (mysql.get() == NULL) {
-            mysql.reset(new MySqlClient("localhost", 3306));
-        }
-        MySqlClient::ResponseCode rc = mysql->dropTable(mapName);
+        initMySqlClient();
+        MySqlClient::ResponseCode rc = mysql_->dropTable(mapName);
         if (rc == MySqlClient::TableNotFound) {
             return ResponseCode::MapNotFound;
         } else if (rc != MySqlClient::Success) {
@@ -80,28 +68,13 @@ public:
               const std::string& startKey, const bool startKeyIncluded, 
               const std::string& endKey, const bool endKeyIncluded,
               const int32_t maxRecords, const int32_t maxBytes) {
-    }
-
-    void scanAscending(RecordListResponse& _return, std::map<std::string, std::string>& map,
-              const std::string& startKey, const bool startKeyIncluded, 
-              const std::string& endKey, const bool endKeyIncluded,
-              const int32_t maxRecords, const int32_t maxBytes) {
-        _return.responseCode = ResponseCode::ScanEnded;
-    }
-
-    void scanDescending(RecordListResponse& _return, std::map<std::string, std::string>& map,
-              const std::string& startKey, const bool startKeyIncluded, 
-              const std::string& endKey, const bool endKeyIncluded,
-              const int32_t maxRecords, const int32_t maxBytes) {
-        _return.responseCode = ResponseCode::ScanEnded;
+        initMySqlClient();
+        mysql_->scan(_return, mapName, order, startKey, startKeyIncluded, endKey, endKeyIncluded, maxRecords, maxBytes);
     }
 
     void get(BinaryResponse& _return, const std::string& mapName, const std::string& key) {
-        boost::thread_specific_ptr<MySqlClient> mysql;
-        if (mysql.get() == NULL) {
-            mysql.reset(new MySqlClient("localhost", 3306));
-        }
-        MySqlClient::ResponseCode rc = mysql->get(mapName, key, _return.value);
+        initMySqlClient();
+        MySqlClient::ResponseCode rc = mysql_->get(mapName, key, _return.value);
         if (rc == MySqlClient::TableNotFound) {
             _return.responseCode = ResponseCode::MapNotFound;
             return;
@@ -120,11 +93,8 @@ public:
     }
 
     ResponseCode::type insert(const std::string& mapName, const std::string& key, const std::string& value) {
-        boost::thread_specific_ptr<MySqlClient> mysql;
-        if (mysql.get() == NULL) {
-            mysql.reset(new MySqlClient("localhost", 3306));
-        }
-        MySqlClient::ResponseCode rc = mysql->insert(mapName, key, value);
+        initMySqlClient();
+        MySqlClient::ResponseCode rc = mysql_->insert(mapName, key, value);
         if (rc == MySqlClient::TableNotFound) {
             return ResponseCode::MapNotFound;
         } else if (rc == MySqlClient::RecordExists) {
@@ -136,11 +106,8 @@ public:
     }
 
     ResponseCode::type update(const std::string& mapName, const std::string& key, const std::string& value) {
-        boost::thread_specific_ptr<MySqlClient> mysql;
-        if (mysql.get() == NULL) {
-            mysql.reset(new MySqlClient("localhost", 3306));
-        }
-        MySqlClient::ResponseCode rc = mysql->update(mapName, key, value);
+        initMySqlClient();
+        MySqlClient::ResponseCode rc = mysql_->update(mapName, key, value);
         if (rc == MySqlClient::TableNotFound) {
             return ResponseCode::MapNotFound;
         } else if (rc == MySqlClient::RecordNotFound) {
@@ -152,11 +119,8 @@ public:
     }
 
     ResponseCode::type remove(const std::string& mapName, const std::string& key) {
-        boost::thread_specific_ptr<MySqlClient> mysql;
-        if (mysql.get() == NULL) {
-            mysql.reset(new MySqlClient("localhost", 3306));
-        }
-        MySqlClient::ResponseCode rc = mysql->remove(mapName, key);
+        initMySqlClient();
+        MySqlClient::ResponseCode rc = mysql_->remove(mapName, key);
         if (rc == MySqlClient::TableNotFound) {
             return ResponseCode::MapNotFound;
         } else if (rc == MySqlClient::RecordNotFound) {
@@ -168,14 +132,21 @@ public:
     }
 
 private:
-    boost::ptr_map<std::string, leveldb::DB> maps_;
-    boost::shared_mutex mutex_; // protect map_
+    void initMySqlClient() {
+        if (mysql_.get() == NULL) {
+            mysql_.reset(new MySqlClient(host_, port_));
+        }
+    }
+
+    boost::thread_specific_ptr<MySqlClient> mysql_;
+    std::string host_;
+    uint32_t port_;
 };
 
 int main(int argc, char **argv) {
     int port = 9091;
     size_t numThreads = 32;
-    shared_ptr<MySqlServer> handler(new MySqlServer());
+    shared_ptr<MySqlServer> handler(new MySqlServer("localhost", 3306));
     shared_ptr<TProcessor> processor(new MapKeeperProcessor(handler));
     shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());

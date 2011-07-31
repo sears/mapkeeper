@@ -9,3 +9,5 @@ Requirements:
     $ cmake -G "Unix Makefiles"
     $ make
     $ sudo make install
+
+You need to have mysql server running on localhost 3306 with password-less root. 

@@ -1,5 +1,6 @@
 #include <string>
 #include <mysql.h>
+#include "MapKeeper.h"
 
 #ifndef MYSQLCLIENT_H
 #define MYSQLCLIENT_H
@@ -13,6 +14,7 @@ public:
         TableNotFound,
         RecordExists,
         RecordNotFound,
+        ScanEnded,
     };
 
     MySqlClient(const std::string& host, uint32_t port);
@@ -22,6 +24,10 @@ public:
     ResponseCode update(const std::string& tableName, const std::string& key, const std::string& value);
     ResponseCode get(const std::string& tableName, const std::string& key, std::string& value);
     ResponseCode remove(const std::string& tableName, const std::string& key);
+    void scan (mapkeeper::RecordListResponse& _return, const std::string& mapName, const mapkeeper::ScanOrder::type order,
+            const std::string& startKey, const bool startKeyIncluded,
+            const std::string& endKey, const bool endKeyIncluded,
+            const int32_t maxRecords, const int32_t maxBytes);
 
 private:
     std::string escapeString(const std::string& str);
