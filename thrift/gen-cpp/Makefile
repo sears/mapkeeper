@@ -16,3 +16,6 @@ $(LIB): $(OBJECTS)
 .cpp.o:
 	$(CC) $(CFLAGS) -fPIC -c $< -o $@
 
+clean:
+	rm -rf *[cpp,h,o]
+	

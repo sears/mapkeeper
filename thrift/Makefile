@@ -1,6 +1,8 @@
 all::
 	thrift --gen cpp --gen java mapkeeper.thrift
 	make -C gen-cpp
+	make -C gen-java
 
 clean::
-	rm -rf gen-cpp/*[cpp,h,o] gen-java/*
+	make -C gen-cpp clean
+	make -C gen-java clean
