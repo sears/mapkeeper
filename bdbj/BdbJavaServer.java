@@ -533,7 +533,7 @@ class BdbJavaServer implements MapKeeper.Iface {
             logger.info("Getting ready...");
             Properties prop = new Properties(); 
             prop.load(new FileInputStream(argv[0]));
-            int port = Integer.parseInt(prop.getProperty("port", "9092"));
+            int port = Integer.parseInt(prop.getProperty("port", "9090"));
             int numThreads = Integer.parseInt(prop.getProperty("num_threads", "32"));
 
             BdbJavaServer pstore = new BdbJavaServer(prop);
