@@ -1,8 +1,9 @@
 EXECUTABLE = mapkeeper_stlmap
 
-all : thrift
-	g++ -Wall -o $(EXECUTABLE) *cpp -I /usr/local/include/thrift -L /usr/local/lib -lthrift \
-        -I ../thrift/gen-cpp -L ../thrift/gen-cpp -lmapkeeper
+all :
+	g++ -Wall -o $(EXECUTABLE) *cpp -I /usr/local/include/thrift -L /usr/local/lib -lthrift -lthriftnb \
+        -I ../thrift/gen-cpp -L ../thrift/gen-cpp -lmapkeeper -levent \
+	-L /usr/local/include/boost_1_47_0/stage/lib/ -lboost_thread
 
 thrift:
 	make -C ../thrift

@@ -4,15 +4,22 @@
  */
 #include <cstdio>
 #include "MapKeeper.h"
+
+#include <boost/thread/shared_mutex.hpp>
 #include <protocol/TBinaryProtocol.h>
 #include <server/TSimpleServer.h>
+#include <server/TThreadPoolServer.h>
+#include <server/TNonblockingServer.h>
 #include <transport/TServerSocket.h>
 #include <transport/TBufferTransports.h>
+#include <thrift/concurrency/ThreadManager.h>
+#include <thrift/concurrency/PosixThreadFactory.h>
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
 using namespace ::apache::thrift::transport;
 using namespace ::apache::thrift::server;
+using namespace ::apache::thrift::concurrency;
 
 using boost::shared_ptr;
 
@@ -28,6 +35,7 @@ public:
     }
 
     ResponseCode::type addMap(const std::string& mapName) {
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
         itr_ = maps_.find(mapName);
         if (itr_ != maps_.end()) {
             return ResponseCode::MapExists;
@@ -39,6 +47,7 @@ public:
     }
 
     ResponseCode::type dropMap(const std::string& mapName) {
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
         itr_ = maps_.find(mapName);
         if (itr_ == maps_.end()) {
             return ResponseCode::MapNotFound;
@@ -48,6 +57,7 @@ public:
     }
 
     void listMaps(StringListResponse& _return) {
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
         for (itr_ = maps_.begin(); itr_ != maps_.end(); itr_++) {
             _return.values.push_back(itr_->first);
         }
@@ -55,9 +65,11 @@ public:
     }
 
     void scan(RecordListResponse& _return, const std::string& mapName, const ScanOrder::type order, const std::string& startKey, const bool startKeyIncluded, const std::string& endKey, const bool endKeyIncluded, const int32_t maxRecords, const int32_t maxBytes) {
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
     }
 
     void get(BinaryResponse& _return, const std::string& mapName, const std::string& key) {
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
         itr_ = maps_.find(mapName);
         if (itr_ == maps_.end()) {
             _return.responseCode = ResponseCode::MapNotFound;
@@ -73,6 +85,7 @@ public:
     }
 
     ResponseCode::type put(const std::string& mapName, const std::string& key, const std::string& value) {
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
         itr_ = maps_.find(mapName);
         if (itr_ == maps_.end()) {
             return ResponseCode::MapNotFound;
@@ -82,13 +95,12 @@ public:
     }
 
     ResponseCode::type insert(const std::string& mapName, const std::string& key, const std::string& value) {
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
         itr_ = maps_.find(mapName);
         if (itr_ == maps_.end()) {
-            printf("map not found\n");
             return ResponseCode::MapNotFound;
         }
         if (itr_->second.find(key) != itr_->second.end()) {
-            printf("record not found\n");
             return ResponseCode::RecordExists;
         }
         itr_->second.insert(std::pair<std::string, std::string>(key, value));
@@ -96,6 +108,7 @@ public:
     }
 
     ResponseCode::type update(const std::string& mapName, const std::string& key, const std::string& value) {
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
         itr_ = maps_.find(mapName);
         if (itr_ == maps_.end()) {
             return ResponseCode::MapNotFound;
@@ -108,6 +121,7 @@ public:
     }
 
     ResponseCode::type remove(const std::string& mapName, const std::string& key) {
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
         itr_ = maps_.find(mapName);
         if (itr_ == maps_.end()) {
             return ResponseCode::MapNotFound;
@@ -122,18 +136,24 @@ public:
 
 private:
     std::map<std::string, std::map<std::string, std::string> > maps_;
+    boost::shared_mutex mutex_; // protect map_
     std::map<std::string, std::map<std::string, std::string> >::iterator itr_;
     std::map<std::string, std::string>::iterator recordIterator_;
 };
 
 int main(int argc, char **argv) {
-    int port = 9091;
+    int port = 9090;
+    size_t numThreads = 32;
     shared_ptr<StlMapServer> handler(new StlMapServer());
     shared_ptr<TProcessor> processor(new MapKeeperProcessor(handler));
     shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
     shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
-    TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);
+    shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(numThreads);
+    shared_ptr<ThreadFactory> threadFactory(new PosixThreadFactory());
+    threadManager->threadFactory(threadFactory);
+    threadManager->start();
+    TNonblockingServer server(processor, protocolFactory, port, threadManager);
     server.serve();
     return 0;
 }
