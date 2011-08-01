@@ -48,7 +48,7 @@ public:
         leveldb::Options options;
         options.create_if_missing = true;
         options.error_if_exists = true;
-        leveldb::Status status = leveldb::DB::Open(options, directoryName_ + mapName, &db);
+        leveldb::Status status = leveldb::DB::Open(options, directoryName_ + "/" + mapName, &db);
         if (!status.ok()) {
             // TODO check return code
             printf("status: %s\n", status.ToString().c_str());
@@ -216,9 +216,9 @@ private:
 };
 
 int main(int argc, char **argv) {
-    int port = 9091;
+    int port = 9090;
     size_t numThreads = 32;
-    shared_ptr<LevelDbServer> handler(new LevelDbServer("."));
+    shared_ptr<LevelDbServer> handler(new LevelDbServer("data"));
     shared_ptr<TProcessor> processor(new MapKeeperProcessor(handler));
     shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
