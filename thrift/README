@@ -5,6 +5,15 @@ Requirements:
 
 - ant 
 
+- libevent
+
+    $ wget http://monkey.org/~provos/libevent-2.0.12-stable.tar.gz
+    $ tar xfvz libevent-2.0.12-stable.tar.gz
+    $ cd libevent-2.0.12-stable
+    $ ./configure --prefix=/usr/local
+    $ make
+    $ sudo make install
+
 - thrift
 
     $ wget http://apache.petsads.us//thrift/0.6.1/thrift-0.6.1.tar.gz
