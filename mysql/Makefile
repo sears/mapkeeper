@@ -11,3 +11,6 @@ run :
 	LD_LIBRARY_PATH=/usr/local/mysql/lib:/usr/local/lib:/usr/local/include/boost_1_47_0/stage/lib:../thrift/gen-cpp ./$(EXECUTABLE)
 clean :
 	- rm $(THRIFT_SRC) $(EXECUTABLE) *o 
+
+wipe :
+	- mysql -uroot -e "drop database if exists mapkeeper"

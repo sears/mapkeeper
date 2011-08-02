@@ -144,8 +144,8 @@ private:
 };
 
 int main(int argc, char **argv) {
-    int port = 9091;
-    size_t numThreads = 32;
+    int port = 9090;
+    size_t numThreads = 100;
     shared_ptr<MySqlServer> handler(new MySqlServer("localhost", 3306));
     shared_ptr<TProcessor> processor(new MapKeeperProcessor(handler));
     shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
