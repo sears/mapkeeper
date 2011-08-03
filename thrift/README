@@ -1,10 +1,6 @@
 Requirements:
 ===================
 
-- java
-
-- ant 
-
 - libevent
 
     $ wget http://monkey.org/~provos/libevent-2.0.12-stable.tar.gz
