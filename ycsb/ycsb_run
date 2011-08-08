@@ -1,3 +1,4 @@
 java -cp YCSB/build/ycsb.jar:../lib/* com.yahoo.ycsb.Client \
-    -t -db com.yahoo.ycsb.db.MapKeeperClient -P workloads/workloada -p measurementtype=timeseries -p timeseries.granularity=2000  -s
+    -t -db com.yahoo.ycsb.db.MapKeeperClient -P workloads/workloada -s -target $1
+    #-t -db com.yahoo.ycsb.db.MapKeeperClient -P workloads/workloada -p measurementtype=timeseries -p timeseries.granularity=2000  -target 1000
 
