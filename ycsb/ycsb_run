@@ -1,5 +1,5 @@
 # target throughput * 600. run the benchmark for about 10 minutes.
 let ops=$1*600
 
-echo java -cp YCSB/build/ycsb.jar:../lib/* com.yahoo.ycsb.Client \
+java -cp YCSB/build/ycsb.jar:../lib/* com.yahoo.ycsb.Client \
     -t -db com.yahoo.ycsb.db.MapKeeperClient -P workloads/workloada -s -target $1 -p operationcount=$ops
