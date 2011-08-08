@@ -1,0 +1,7 @@
+for i in $(seq 400 400 2000)
+do
+    ./ycsb_run $i | tee data/mysql_8020_$i
+    echo "sleeping for 30 sec"
+    sleep 30
+done
+

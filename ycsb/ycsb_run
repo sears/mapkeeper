@@ -1,4 +1,5 @@
-java -cp YCSB/build/ycsb.jar:../lib/* com.yahoo.ycsb.Client \
-    -t -db com.yahoo.ycsb.db.MapKeeperClient -P workloads/workloada -s -target $1
-    #-t -db com.yahoo.ycsb.db.MapKeeperClient -P workloads/workloada -p measurementtype=timeseries -p timeseries.granularity=2000  -target 1000
+# target throughput * 600. run the benchmark for about 10 minutes.
+let ops=$1*600
 
+echo java -cp YCSB/build/ycsb.jar:../lib/* com.yahoo.ycsb.Client \
+    -t -db com.yahoo.ycsb.db.MapKeeperClient -P workloads/workloada -s -target $1 -p operationcount=$ops
