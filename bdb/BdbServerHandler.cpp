@@ -78,7 +78,7 @@ init(const std::string& homeDir,
     assert(0 == databaseIds_.open(env_, "ids", pageSizeKb, numRetries));
     for (int i = 0; i < 10; i++) {
         Bdb* db = new Bdb();
-        assert(Bdb::Success == db->open(env_, "test", pageSizeKb, numRetries, 32));
+        assert(Bdb::Success == db->open(env_, "test", pageSizeKb, numRetries));
         boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
         std::string dbname = "test";
         maps_.insert(dbname, db);
@@ -108,11 +108,6 @@ addMap(const std::string& databaseName)
     return ResponseCode::Success;
 }
 
-/**
- * TODO:
- * Don't just remove database from databaseIds. You need to delete
- * all the records!
- */
 ResponseCode::type BdbServerHandler::
 dropMap(const std::string& databaseName) 
 {

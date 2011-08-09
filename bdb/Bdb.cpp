@@ -23,8 +23,7 @@ Bdb::ResponseCode Bdb::
 open(boost::shared_ptr<BdbEnv> env, 
      const std::string& databaseName,
      uint32_t pageSizeKb,
-     uint32_t numRetries,
-     uint32_t numPartitions)
+     uint32_t numRetries)
 {
     if (inited_) {
         fprintf(stderr, "Tried to open db %s but %s is already open", databaseName.c_str(), dbName_.c_str());

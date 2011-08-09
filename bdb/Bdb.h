@@ -32,8 +32,7 @@ public:
     ResponseCode open(boost::shared_ptr<BdbEnv> env, 
                       const std::string& databaseName,
                       uint32_t pageSizeKb,
-                      uint32_t numRetries,
-                      uint32_t numPartitions=1);
+                      uint32_t numRetries);
     ResponseCode close();
     ResponseCode drop();
     ResponseCode get(const std::string& key, std::string& value, RecordBuffer& buffer);
