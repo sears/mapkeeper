@@ -2,7 +2,6 @@
 // You should copy it to another filename to avoid overwriting it.
 
 #include <boost/thread.hpp>
-#include <boost/program_options.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <protocol/TBinaryProtocol.h>
@@ -20,12 +19,10 @@ using namespace ::apache::thrift::server;
 
 using namespace mapkeeper;
 using boost::shared_ptr;
-namespace po = boost::program_options;
 
 class BdbServerHandler : virtual public MapKeeperIf {
 public:
     BdbServerHandler();
-    int init(po::variables_map& vm);
     int init(const std::string& homeDir, 
              uint32_t pageSizeKb, uint32_t numRetries,
              uint32_t keyBufferSizeBytes, uint32_t valueBufferSizeBytes,
@@ -54,4 +51,5 @@ private:
     boost::scoped_ptr<boost::thread> checkpointer_;
     uint32_t keyBufferSizeBytes_;
     uint32_t valueBufferSizeBytes_;
+    static std::string DBNAME_PREFIX;
 };

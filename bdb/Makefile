@@ -1,4 +1,4 @@
-EXECUTABLE = mapkeeper_stlmap
+EXECUTABLE = mapkeeper_bdb
 
 all :
 	g++ -Wall -o $(EXECUTABLE) *cpp -I /usr/local/include/thrift -L /usr/local/lib -lthrift -lthriftnb \
@@ -10,3 +10,6 @@ run :
 	LD_LIBRARY_PATH=/usr/local/lib:../thrift/gen-cpp ./$(EXECUTABLE)
 clean :
 	- rm $(EXECUTABLE) *o 
+
+wipe:
+	- find data/ -type f |grep -v DB_CONFIG | xargs rm -f

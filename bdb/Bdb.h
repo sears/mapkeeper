@@ -4,7 +4,6 @@
 #include <db_cxx.h>
 #include <boost/shared_ptr.hpp>
 #include "BdbEnv.h"
-#include "RecordBuffer.h"
 
 class Bdb {
 public:
@@ -13,7 +12,10 @@ public:
         Error,
         KeyExists,
         KeyNotFound,
+        DbExists,
+        DbNotFound,
     };
+
     Bdb();
 
     /**
@@ -22,20 +24,30 @@ public:
     ~Bdb();
 
     /**
+     * Create a database.
+     *
+     * @returns Success on success
+     *          DbExists if the database already exists.
+     */
+    ResponseCode create(boost::shared_ptr<BdbEnv> env, 
+                      const std::string& databaseName,
+                      uint32_t pageSizeKb,
+                      uint32_t numRetries);
+
+    /**
      * Opens a database.
      *
-     * It will create the database if it doesn't exist. 
-     *
-     * @returns SuOk on success
-     *          PStoreUnexpectedError on failure
+     * @returns Success on success
+     *          DbNotFound if the database doesn't exist.
      */
     ResponseCode open(boost::shared_ptr<BdbEnv> env, 
                       const std::string& databaseName,
                       uint32_t pageSizeKb,
                       uint32_t numRetries);
+
     ResponseCode close();
     ResponseCode drop();
-    ResponseCode get(const std::string& key, std::string& value, RecordBuffer& buffer);
+    ResponseCode get(const std::string& key, std::string& value);
     ResponseCode insert(const std::string& key, const std::string& value);
     ResponseCode update(const std::string& key, const std::string& value);
     ResponseCode remove(const std::string& key);

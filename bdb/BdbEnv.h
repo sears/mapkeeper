@@ -49,6 +49,11 @@ public:
     int close();
 
     /**
+     * Returns the home directory for this environment. 
+     */
+    std::string getHomeDir();
+
+    /**
      * Returns DbEnv pointer.
      */
     DbEnv* getEnv();

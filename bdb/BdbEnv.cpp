@@ -85,6 +85,12 @@ close()
     return 0;
 }
 
+std::string BdbEnv::
+getHomeDir()
+{
+    return homeDir_;
+}
+
 DbEnv* BdbEnv::
 getEnv()
 {

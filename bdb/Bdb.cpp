@@ -20,6 +20,33 @@ Bdb::
 }
 
 Bdb::ResponseCode Bdb::
+create(boost::shared_ptr<BdbEnv> env, 
+     const std::string& databaseName,
+     uint32_t pageSizeKb,
+     uint32_t numRetries)
+{
+    if (inited_) {
+        fprintf(stderr, "Tried to open db %s but %s is already open", databaseName.c_str(), dbName_.c_str());
+        return Error;
+    }
+    env_ = env;
+    numRetries_ = numRetries;
+    db_.reset(new Db(env_->getEnv(), DB_CXX_NO_EXCEPTIONS));
+    assert(0 == db_->set_pagesize(pageSizeKb * 1024));
+    int flags = DB_AUTO_COMMIT | DB_CREATE | DB_EXCL| DB_THREAD;
+    int rc = db_->open(NULL, databaseName.c_str(), NULL, DB_BTREE, flags, 0);
+    if (rc == EEXIST) {
+        return DbExists;
+    } else if (rc != 0) {
+        // unexpected error
+        fprintf(stderr, "Db::open() returned: %s", db_strerror(rc));
+        return Error;
+    }
+    dbName_ = databaseName;
+    inited_ = true;
+    return Success;
+}
+Bdb::ResponseCode Bdb::
 open(boost::shared_ptr<BdbEnv> env, 
      const std::string& databaseName,
      uint32_t pageSizeKb,
@@ -33,9 +60,11 @@ open(boost::shared_ptr<BdbEnv> env,
     numRetries_ = numRetries;
     db_.reset(new Db(env_->getEnv(), DB_CXX_NO_EXCEPTIONS));
     assert(0 == db_->set_pagesize(pageSizeKb * 1024));
-    int flags = DB_AUTO_COMMIT | DB_CREATE | DB_THREAD;
+    int flags = DB_AUTO_COMMIT | DB_THREAD;
     int rc = db_->open(NULL, databaseName.c_str(), NULL, DB_BTREE, flags, 0);
-    if (rc != 0) {
+    if (rc == ENOENT) {
+        return DbNotFound;
+    } else if (rc != 0) {
         // unexpected error
         fprintf(stderr, "Db::open() returned: %s", db_strerror(rc));
         return Error;
@@ -86,7 +115,7 @@ drop()
 }
 
 Bdb::ResponseCode Bdb::
-get(const std::string& key, std::string& value, RecordBuffer& buffer)
+get(const std::string& key, std::string& value)
 {
     if (!inited_) {
         fprintf(stderr, "get called on uninitialized database");
@@ -96,9 +125,7 @@ get(const std::string& key, std::string& value, RecordBuffer& buffer)
     Dbt dbkey, dbval;
     dbkey.set_data(const_cast<char*>(key.c_str()));
     dbkey.set_size(key.size());
-    dbval.set_data(buffer.getValueBuffer());
-    dbval.set_ulen(buffer.getValueBufferSize());
-    dbval.set_flags(DB_DBT_USERMEM);
+    dbval.set_flags(DB_DBT_MALLOC);
 
     int rc = 0;
     for (uint32_t idx = 0; idx < numRetries_; idx++) {
@@ -109,6 +136,7 @@ get(const std::string& key, std::string& value, RecordBuffer& buffer)
         rc = db_->get(NULL, &dbkey, &dbval, 0);
         if (rc == 0) {
             value.assign((char*)(dbval.get_data()), dbval.get_size());
+            free(dbval.get_data());
             return Success;
         } else if (rc == DB_NOTFOUND) {
             return KeyNotFound;

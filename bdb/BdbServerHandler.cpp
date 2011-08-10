@@ -1,5 +1,6 @@
 #include <sstream>
 #include <cerrno>
+#include <dirent.h>
 #include <endian.h>
 #include <stdio.h>
 #include <boost/thread/tss.hpp>
@@ -17,6 +18,8 @@ using namespace ::apache::thrift::protocol;
 using namespace ::apache::thrift::transport;
 using namespace ::apache::thrift::server;
 using namespace ::apache::thrift::concurrency;
+
+std::string BdbServerHandler::DBNAME_PREFIX = "mapkeeper_";
 
 BdbServerHandler::
 BdbServerHandler()
@@ -46,7 +49,6 @@ void BdbServerHandler::
 checkpoint(uint32_t checkpointFrequencyMs, uint32_t checkpointMinChangeKb)
 {
     int rc = 0;
-    fprintf(stderr, "checkpoint frequency: %d", checkpointFrequencyMs);
     while (true) {
         rc = env_->getEnv()->txn_checkpoint(10, 0, 0);
         if (rc != 0) {
@@ -56,12 +58,6 @@ checkpoint(uint32_t checkpointFrequencyMs, uint32_t checkpointMinChangeKb)
     }
 }
 
-int BdbServerHandler::
-init(po::variables_map& vm)
-{
-    return 0;
-}
- 
 int BdbServerHandler::
 init(const std::string& homeDir,
      uint32_t pageSizeKb,
@@ -73,8 +69,10 @@ init(const std::string& homeDir,
 {
     keyBufferSizeBytes_ = keyBufferSizeBytes;
     valueBufferSizeBytes_ = valueBufferSizeBytes;
+    printf("initing\n");
     env_.reset(new BdbEnv(homeDir));
     assert(0 == env_->open());
+    /*
     assert(0 == databaseIds_.open(env_, "ids", pageSizeKb, numRetries));
     for (int i = 0; i < 10; i++) {
         Bdb* db = new Bdb();
@@ -85,6 +83,7 @@ init(const std::string& homeDir,
     }
     checkpointer_.reset(new boost::thread(&BdbServerHandler::checkpoint, this,
                                           checkpointFrequencyMs, checkpointMinChangeKb));
+                                          */
     return 0;
 }
 
@@ -95,35 +94,57 @@ ping()
 }
 
 ResponseCode::type BdbServerHandler::
-addMap(const std::string& databaseName) 
+addMap(const std::string& mapName) 
 {
-    uint32_t databaseId;
-    databaseId = databaseId;
-    std::stringstream out;
-    out << databaseId;
-    Bdb::ResponseCode rc = databaseIds_.insert(databaseName, out.str());
-    if (rc == Bdb::KeyExists) {
+    boost::unique_lock<boost::shared_mutex> writeLock(mutex_);;
+    std::string dbName = DBNAME_PREFIX + mapName;
+    Bdb* db = new Bdb();
+    Bdb::ResponseCode rc = db->create(env_, dbName, 16, 100);
+    if (rc == Bdb::DbExists) {
+        delete db;
         return ResponseCode::MapExists;
     }
+    std::string mapName_ = mapName;
+    maps_.insert(mapName_, db);
     return ResponseCode::Success;
 }
 
 ResponseCode::type BdbServerHandler::
-dropMap(const std::string& databaseName) 
+dropMap(const std::string& mapName) 
 {
-    Bdb::ResponseCode rc = databaseIds_.remove(databaseName);
-    if (rc == Bdb::KeyNotFound) {
+    boost::unique_lock<boost::shared_mutex> writeLock(mutex_);;
+    std::string dbName = DBNAME_PREFIX + mapName;
+    boost::ptr_map<std::string, Bdb>::iterator itr = maps_.find(mapName);
+    if (itr == maps_.end()) {
         return ResponseCode::MapNotFound;
-    } else if (rc != Bdb::Success) {
-        return ResponseCode::Error;
-    } else {
-        return ResponseCode::Success;
     }
+    itr->second->close();
+    maps_.erase(itr);
+    int rc = env_->getEnv()->dbremove(NULL, dbName.c_str(), NULL, DB_AUTO_COMMIT);
+    if (rc != 0) {
+        fprintf(stderr, "dbremove %s\n", db_strerror(rc));
+    }
+    return ResponseCode::Success;
 }
 
 void BdbServerHandler::
 listMaps(StringListResponse& _return) 
 {
+    DIR *dp;
+    struct dirent *dirp;
+    if((dp  = opendir(env_->getHomeDir().c_str())) == NULL) {
+        _return.responseCode = ResponseCode::Success;
+        return;
+    }
+
+    while ((dirp = readdir(dp)) != NULL) {
+        std::string fileName(dirp->d_name);
+        if (fileName.find(DBNAME_PREFIX) == 0) {
+            _return.values.push_back(fileName.substr(DBNAME_PREFIX.size()));
+        }
+    }
+    closedir(dp);
+    _return.responseCode = ResponseCode::Success;
 }
 
 void BdbServerHandler::
@@ -177,12 +198,7 @@ get(BinaryResponse& _return, const std::string& mapName, const std::string& reco
         _return.responseCode = ResponseCode::MapNotFound;
         return;
     }
- 
-    boost::thread_specific_ptr<RecordBuffer> buffer;
-    if (buffer.get() == NULL) {
-        buffer.reset(new RecordBuffer(keyBufferSizeBytes_, valueBufferSizeBytes_));
-    }
-    Bdb::ResponseCode dbrc = itr->second->get(recordName, _return.value, *buffer);
+    Bdb::ResponseCode dbrc = itr->second->get(recordName, _return.value);
     if (dbrc == Bdb::Success) {
         _return.responseCode = ResponseCode::Success;
     } else if (dbrc == Bdb::KeyNotFound) {
@@ -219,13 +235,16 @@ insert(const std::string& mapName,
     boost::shared_lock< boost::shared_mutex> readLock(mutex_);;
     boost::ptr_map<std::string, Bdb>::iterator itr = maps_.find(mapName);
     if (itr == maps_.end()) {
+        printf("map not found\n");
         return ResponseCode::MapNotFound;
     }
  
     Bdb::ResponseCode dbrc = itr->second->insert(recordName, recordBody);
     if (dbrc == Bdb::KeyExists) {
+        printf("exist not found\n");
         return ResponseCode::RecordExists;
     } else if (dbrc != Bdb::Success) {
+        printf("struggle\n");
         return ResponseCode::Error;
     }
     return ResponseCode::Success;
@@ -279,7 +298,20 @@ remove(const std::string& mapName, const std::string& recordName)
 int main(int argc, char **argv) {
     int port = 9090;
     size_t numThreads = 32;
+    std::string homeDir = "data";
+    uint32_t pageSizeKb = 16;
+    uint32_t numRetries = 100;
+    uint32_t keyBufferSizeBytes = 1000;
+    uint32_t valueBufferSizeBytes = 10000;
+    uint32_t checkpointFrequencyMs = 1000;
+    uint32_t checkpointMinChangeKb = 1000;
     shared_ptr<BdbServerHandler> handler(new BdbServerHandler());
+    handler->init(homeDir, pageSizeKb, numRetries, 
+    keyBufferSizeBytes,
+    valueBufferSizeBytes,
+    checkpointFrequencyMs,
+    checkpointMinChangeKb);
+ 
     shared_ptr<TProcessor> processor(new MapKeeperProcessor(handler));
     shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());

@@ -2,7 +2,7 @@
 # http://download.oracle.com/docs/cd/E17076_02/html/api_reference/CXX/configuration_reference.html
 #
 mutex_set_max 2000000
-set_cachesize $(cache_size_gb) 0 1
+set_cachesize 2 0 1
 set_lk_max_objects 2000
 set_lk_max_locks 10000
 set_lk_max_lockers 10000
