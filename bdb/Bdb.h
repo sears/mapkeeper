@@ -3,7 +3,7 @@
 
 #include <db_cxx.h>
 #include <boost/shared_ptr.hpp>
-#include "BdbEnv.h"
+#include <boost/scoped_ptr.hpp>
 
 class Bdb {
 public:
@@ -29,7 +29,7 @@ public:
      * @returns Success on success
      *          DbExists if the database already exists.
      */
-    ResponseCode create(boost::shared_ptr<BdbEnv> env, 
+    ResponseCode create(boost::shared_ptr<DbEnv> env, 
                       const std::string& databaseName,
                       uint32_t pageSizeKb,
                       uint32_t numRetries);
@@ -40,7 +40,7 @@ public:
      * @returns Success on success
      *          DbNotFound if the database doesn't exist.
      */
-    ResponseCode open(boost::shared_ptr<BdbEnv> env, 
+    ResponseCode open(boost::shared_ptr<DbEnv> env, 
                       const std::string& databaseName,
                       uint32_t pageSizeKb,
                       uint32_t numRetries);
@@ -54,7 +54,7 @@ public:
     Db* getDb();
 
 private:
-    boost::shared_ptr<BdbEnv> env_;
+    boost::shared_ptr<DbEnv> env_;
     boost::scoped_ptr<Db> db_;
     std::string dbName_;
     bool inited_;

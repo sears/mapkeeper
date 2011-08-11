@@ -21,6 +21,44 @@ using namespace ::apache::thrift::concurrency;
 
 std::string BdbServerHandler::DBNAME_PREFIX = "mapkeeper_";
 
+/**
+ * Berkeley DB calls this function if it has something useful to say.
+ *
+ * http://download.oracle.com/docs/cd/E17076_02/html/api_reference/CXX/envset_errcall.html
+ */
+void BdbServerHandler::
+bdbMessageCallback(const DbEnv *dbenv, const char *errpfx, const char *msg)
+{
+    fprintf(stderr, "Bdb Message: %s\n", msg);
+}
+
+void BdbServerHandler::
+initEnv(const std::string& homeDir)  
+{
+    u_int32_t flags =
+        DB_THREAD         | // multi-threaded
+        DB_RECOVER        | // run recovery before opening
+        DB_CREATE         | // create if it doesn't already exist
+        DB_READ_COMMITTED | // isolation level
+        DB_INIT_TXN       | // enable transactions
+        DB_INIT_LOCK      | // for multiple processes/threads
+        DB_INIT_LOG       | // for recovery
+        DB_INIT_MPOOL     ; // shared memory buffer
+    env_.reset(new DbEnv(DB_CXX_NO_EXCEPTIONS));
+    env_->set_errcall(bdbMessageCallback);
+
+    // automatically remove unnecessary log files.
+    int rc = env_->log_set_config(DB_LOG_AUTO_REMOVE, 1);
+    if (rc != 0) {
+        fprintf(stderr, "DbEnv::log_set_config(DB_LOG_AUTO_REMOVE, 1) returned: %s", db_strerror(rc));
+    }
+
+    rc = env_->open(homeDir.c_str(), flags, 0);
+    if (rc != 0) {
+        fprintf(stderr, "DbEnv::open() returned: %s", db_strerror(rc));
+    }
+}
+
 BdbServerHandler::
 BdbServerHandler()
 {
@@ -50,9 +88,9 @@ checkpoint(uint32_t checkpointFrequencyMs, uint32_t checkpointMinChangeKb)
 {
     int rc = 0;
     while (true) {
-        rc = env_->getEnv()->txn_checkpoint(10, 0, 0);
+        rc = env_->txn_checkpoint(10, 0, 0);
         if (rc != 0) {
-            fprintf(stderr, "txn_checkpoint returned %s", db_strerror(rc));
+            fprintf(stderr, "txn_checkpoint returned %s\n", db_strerror(rc));
         }
         nanoSleep(checkpointFrequencyMs * 1000 *1000);
     }
@@ -70,21 +108,28 @@ init(const std::string& homeDir,
     keyBufferSizeBytes_ = keyBufferSizeBytes;
     valueBufferSizeBytes_ = valueBufferSizeBytes;
     printf("initing\n");
-    env_.reset(new BdbEnv(homeDir));
-    assert(0 == env_->open());
-    /*
-    assert(0 == databaseIds_.open(env_, "ids", pageSizeKb, numRetries));
-    for (int i = 0; i < 10; i++) {
+    initEnv(homeDir);
+
+    StringListResponse maps;
+    listMaps(maps);
+    boost::unique_lock<boost::shared_mutex> writeLock(mutex_);;
+    for (std::vector<std::string>::iterator itr = maps.values.begin();
+         itr != maps.values.end(); itr++) {
+        std::string dbName = DBNAME_PREFIX + *itr;
+        fprintf(stderr, "opening db: %s\n", dbName.c_str());
         Bdb* db = new Bdb();
-        assert(Bdb::Success == db->open(env_, "test", pageSizeKb, numRetries));
-        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
-        std::string dbname = "test";
-        maps_.insert(dbname, db);
+        Bdb::ResponseCode rc = db->open(env_, dbName, 16, 100);
+        if (rc == Bdb::DbNotFound) {
+            delete db;
+            fprintf(stderr, "failed to open db: %s\n", dbName.c_str());
+            return ResponseCode::MapNotFound;
+        }
+        maps_.insert(*itr, db);
+
     }
     checkpointer_.reset(new boost::thread(&BdbServerHandler::checkpoint, this,
                                           checkpointFrequencyMs, checkpointMinChangeKb));
-                                          */
-    return 0;
+    return ResponseCode::Success;
 }
 
 ResponseCode::type BdbServerHandler::
@@ -118,12 +163,8 @@ dropMap(const std::string& mapName)
     if (itr == maps_.end()) {
         return ResponseCode::MapNotFound;
     }
-    itr->second->close();
+    itr->second->drop();
     maps_.erase(itr);
-    int rc = env_->getEnv()->dbremove(NULL, dbName.c_str(), NULL, DB_AUTO_COMMIT);
-    if (rc != 0) {
-        fprintf(stderr, "dbremove %s\n", db_strerror(rc));
-    }
     return ResponseCode::Success;
 }
 
@@ -132,7 +173,9 @@ listMaps(StringListResponse& _return)
 {
     DIR *dp;
     struct dirent *dirp;
-    if((dp  = opendir(env_->getHomeDir().c_str())) == NULL) {
+    const char* homeDir;
+    assert(0 == env_->get_home(&homeDir));
+    if((dp = opendir(homeDir)) == NULL) {
         _return.responseCode = ResponseCode::Success;
         return;
     }
@@ -235,16 +278,13 @@ insert(const std::string& mapName,
     boost::shared_lock< boost::shared_mutex> readLock(mutex_);;
     boost::ptr_map<std::string, Bdb>::iterator itr = maps_.find(mapName);
     if (itr == maps_.end()) {
-        printf("map not found\n");
         return ResponseCode::MapNotFound;
     }
  
     Bdb::ResponseCode dbrc = itr->second->insert(recordName, recordBody);
     if (dbrc == Bdb::KeyExists) {
-        printf("exist not found\n");
         return ResponseCode::RecordExists;
     } else if (dbrc != Bdb::Success) {
-        printf("struggle\n");
         return ResponseCode::Error;
     }
     return ResponseCode::Success;

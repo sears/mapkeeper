@@ -8,7 +8,7 @@
 #include <server/TSimpleServer.h>
 #include <transport/TServerSocket.h>
 #include <transport/TBufferTransports.h>
-#include "BdbEnv.h"
+#include <db_cxx.h>
 #include "Bdb.h"
 #include "MapKeeper.h"
 
@@ -44,8 +44,9 @@ public:
 
 private:
     void checkpoint(uint32_t checkpointFrequencyMs, uint32_t checkpointMinChangeKb);
-    boost::shared_ptr<BdbEnv> env_;
-    Bdb databaseIds_;
+    void initEnv(const std::string& homeDir);
+    static void bdbMessageCallback(const DbEnv *dbenv, const char *errpfx, const char *msg);
+    boost::shared_ptr<DbEnv> env_;
     boost::ptr_map<std::string, Bdb> maps_;
     boost::shared_mutex mutex_; // protect maps_
     boost::scoped_ptr<boost::thread> checkpointer_;

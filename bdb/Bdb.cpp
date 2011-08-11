@@ -3,7 +3,6 @@
 #include <iomanip>
 #include <boost/thread/tss.hpp>
 #include "Bdb.h"
-#include "BdbEnv.h"
 
 Bdb::
 Bdb() :
@@ -20,7 +19,7 @@ Bdb::
 }
 
 Bdb::ResponseCode Bdb::
-create(boost::shared_ptr<BdbEnv> env, 
+create(boost::shared_ptr<DbEnv> env, 
      const std::string& databaseName,
      uint32_t pageSizeKb,
      uint32_t numRetries)
@@ -31,7 +30,7 @@ create(boost::shared_ptr<BdbEnv> env,
     }
     env_ = env;
     numRetries_ = numRetries;
-    db_.reset(new Db(env_->getEnv(), DB_CXX_NO_EXCEPTIONS));
+    db_.reset(new Db(env_.get(), DB_CXX_NO_EXCEPTIONS));
     assert(0 == db_->set_pagesize(pageSizeKb * 1024));
     int flags = DB_AUTO_COMMIT | DB_CREATE | DB_EXCL| DB_THREAD;
     int rc = db_->open(NULL, databaseName.c_str(), NULL, DB_BTREE, flags, 0);
@@ -47,7 +46,7 @@ create(boost::shared_ptr<BdbEnv> env,
     return Success;
 }
 Bdb::ResponseCode Bdb::
-open(boost::shared_ptr<BdbEnv> env, 
+open(boost::shared_ptr<DbEnv> env, 
      const std::string& databaseName,
      uint32_t pageSizeKb,
      uint32_t numRetries)
@@ -58,7 +57,7 @@ open(boost::shared_ptr<BdbEnv> env,
     }
     env_ = env;
     numRetries_ = numRetries;
-    db_.reset(new Db(env_->getEnv(), DB_CXX_NO_EXCEPTIONS));
+    db_.reset(new Db(env_.get(), DB_CXX_NO_EXCEPTIONS));
     assert(0 == db_->set_pagesize(pageSizeKb * 1024));
     int flags = DB_AUTO_COMMIT | DB_THREAD;
     int rc = db_->open(NULL, databaseName.c_str(), NULL, DB_BTREE, flags, 0);
@@ -102,7 +101,7 @@ drop()
     if (returnCode != 0) {
         return returnCode;
     }
-    int rc = env_->getEnv()->dbremove(NULL, dbName_.c_str(), NULL, DB_AUTO_COMMIT);
+    int rc = env_->dbremove(NULL, dbName_.c_str(), NULL, DB_AUTO_COMMIT);
     if (rc == ENOENT) {
     } else if (rc == DB_LOCK_DEADLOCK) {
         fprintf(stderr, "Txn aborted to avoid deadlock: %s", db_strerror(rc));
@@ -207,7 +206,7 @@ update(const std::string& key, const std::string& value)
 
     int rc = 0;
     for (uint32_t idx = 0; idx < numRetries_; idx++) {
-        env_->getEnv()->txn_begin(NULL, &txn, 0);
+        env_->txn_begin(NULL, &txn, 0);
         (*db_).cursor(txn, &cursor, DB_READ_COMMITTED);
 
         // move the cursor to the record.
