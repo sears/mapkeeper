@@ -245,7 +245,6 @@ Bdb::ResponseCode Bdb::
 remove(const std::string& key)
 {
     if (!inited_) {
-        //return SuCode::InvalidState;
         return Error;
     }
     Dbt dbkey;

@@ -43,9 +43,9 @@ BdbIterator::
  * http://download.oracle.com/docs/cd/E17076_02/html/programmer_reference/am_misc_stability.html
  */
 BdbIterator::ResponseCode BdbIterator::
-init(boost::shared_ptr<Bdb> bdb, const std::string& startKey, bool startKeyIncluded,
+init(Bdb* bdb, const std::string& startKey, bool startKeyIncluded,
         const std::string& endKey, bool endKeyIncluded,
-        mapkeeper::ScanOrder::type order, RecordBuffer& buffer)
+        mapkeeper::ScanOrder::type order)
 {
     scanEnded_ = false;
     order_ = order;
@@ -58,7 +58,7 @@ init(boost::shared_ptr<Bdb> bdb, const std::string& startKey, bool startKeyInclu
     if (order_ == mapkeeper::ScanOrder::Ascending) {
         return initAscendingScan();
     } else {
-        return initDescendingScan(buffer);
+        return initDescendingScan();
     }
 }
 
@@ -133,9 +133,14 @@ nextDescending(RecordBuffer& buffer, Dbt& dbkey, Dbt& dbval)
         }
         buffer.setKeySize(dbkey.get_size());
         buffer.setValueSize(dbval.get_size());
-        if (!endKeyIncluded_ && 
-            compareKeys(endKey_.c_str(), endKey_.size(), buffer.getKeyBuffer(), buffer.getKeySize()) == 0) {
-            continue;
+        if (endKeyIncluded_) {
+            if (!endKey_.empty() && compareKeys(endKey_.c_str(), endKey_.size(), buffer.getKeyBuffer(), buffer.getKeySize()) < 0) {
+                continue;
+            }
+        } else {
+            if (!endKey_.empty() && compareKeys(endKey_.c_str(), endKey_.size(), buffer.getKeyBuffer(), buffer.getKeySize()) <= 0) {
+                continue;
+            }
         }
         if (!startKeyIncluded_) {
             if (compareKeys(startKey_.c_str(), startKey_.size(), buffer.getKeyBuffer(), buffer.getKeySize()) >= 0) {
@@ -170,7 +175,7 @@ initAscendingScan()
 }
 
 BdbIterator::ResponseCode BdbIterator::
-initDescendingScan(RecordBuffer& buffer)
+initDescendingScan()
 {
     Dbt key, val;
     if (endKey_.empty()) {
@@ -187,33 +192,17 @@ initDescendingScan(RecordBuffer& buffer)
     if (rc == DB_NOTFOUND) {
         // cursor is not pointing to any record. make it point to the 
         // last key. 
-        initEmptyData(key);
-        int rc = cursor_->get(&key, &val, DB_PREV);
+        int rc = cursor_->get(&key, &val, DB_LAST);
         if (rc == DB_NOTFOUND) {
             // database is empty. nothing to scan
             scanEnded_ = true;
+            return BdbIterator::Success; 
         }
     } else if (rc != 0) {
         // unexpected error
         return BdbIterator::Error; 
     }
-
-    // the current key can be either greater than or equal to the start key.
-    key.set_data(buffer.getKeyBuffer());
-    key.set_ulen(buffer.getKeyBufferSize());
-    key.set_flags(DB_DBT_USERMEM);
-
-    // this better succeed
-    cursor_->get(&key, &val, DB_CURRENT);
-    buffer.setKeySize(key.get_size());
-    while (compareKeys(endKey_.c_str(), endKey_.size(), buffer.getKeyBuffer(), buffer.getKeySize()) < 0) {
-        int rc = cursor_->get(&key, &val, DB_PREV);
-        if (rc == DB_NOTFOUND) {
-            scanEnded_ = true;
-            break;
-        }
-        buffer.setKeySize(key.get_size());
-    }
+    // the current key can be either greater than or equal to the end key.
     flags_ = DB_CURRENT;
     inited_ = true;
     return BdbIterator::Success; 

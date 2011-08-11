@@ -210,7 +210,7 @@ scan(RecordListResponse& _return, const std::string& mapName, const ScanOrder::t
         return;
     }
  
-    //itr.init(itr->second, const_cast<std::string&>(startKey), startKeyIncluded, const_cast<std::string&>(endKey), endKeyIncluded, order, *buffer);
+    itr.init(mapItr->second, const_cast<std::string&>(startKey), startKeyIncluded, const_cast<std::string&>(endKey), endKeyIncluded, order);
 
     int32_t resultSize = 0;
     _return.responseCode = ResponseCode::Success;

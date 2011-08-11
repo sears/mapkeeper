@@ -1,7 +1,6 @@
 #ifndef BDB_ITERATOR_H
 #define BDB_ITERATOR_H
 
-#include <boost/shared_ptr.hpp>
 #include "MapKeeper.h"
 #include "Bdb.h"
 #include "RecordBuffer.h"
@@ -25,10 +24,10 @@ public:
      * of the scan order. If startKey is larger than endKey, scan result will
      * be empty.
      */
-    ResponseCode init(boost::shared_ptr<Bdb> bdb, 
+    ResponseCode init(Bdb* bdb, 
                       const std::string& startKey, bool startKeyIncluded,
                       const std::string& endKey, bool endKeyIncluded,
-                      mapkeeper::ScanOrder::type order, RecordBuffer& buffer);
+                      mapkeeper::ScanOrder::type order);
     ResponseCode next(RecordBuffer& buffer);
 
 private:
@@ -36,13 +35,13 @@ private:
     BdbIterator& operator=(const BdbIterator&);
     static int compareKeys(const char* a, uint32_t alen, const char* b, uint32_t blen);
     ResponseCode initAscendingScan();
-    ResponseCode initDescendingScan(RecordBuffer& buffer);
+    ResponseCode initDescendingScan();
     ResponseCode nextAscending(RecordBuffer& buffer, Dbt& dbkey, Dbt& dbval);
     ResponseCode nextDescending(RecordBuffer& buffer, Dbt& dbkey, Dbt& dbval);
     void initEmptyData(Dbt& data);
     bool inited_;
     bool scanEnded_;
-    boost::shared_ptr<Bdb> bdb_;
+    Bdb* bdb_;
     int32_t flags_;
     Dbc* cursor_;
     mapkeeper::ScanOrder::type order_;
