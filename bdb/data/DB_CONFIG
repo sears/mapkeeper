@@ -1,0 +1,16 @@
+#
+# http://download.oracle.com/docs/cd/E17076_02/html/api_reference/CXX/configuration_reference.html
+#
+mutex_set_max 2000000
+set_cachesize 2 0 1
+set_lk_max_objects 2000
+set_lk_max_locks 10000
+set_lk_max_lockers 10000
+set_lg_regionmax 8388608
+set_lk_detect DB_LOCK_DEFAULT
+set_thread_count 20000 
+
+# set max size of the log to 1GB
+set_lg_max 1073741824 
+#log_set_config DB_LOG_IN_MEMORY
+#set_lg_bsize 134217728
