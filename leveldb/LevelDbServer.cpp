@@ -7,8 +7,10 @@
 #include <cstdio>
 #include "MapKeeper.h"
 #include <leveldb/db.h>
+#include <leveldb/cache.h>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <boost/filesystem.hpp>
 #include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
@@ -30,6 +32,7 @@ using namespace ::apache::thrift::server;
 using namespace ::apache::thrift::concurrency;
 
 using boost::shared_ptr;
+using namespace boost::filesystem;
 
 using namespace mapkeeper;
 
@@ -37,6 +40,26 @@ class LevelDbServer: virtual public MapKeeperIf {
 public:
     LevelDbServer(const std::string& directoryName) : 
         directoryName_(directoryName) {
+
+        // open all the existing databases
+        leveldb::DB* db;
+        leveldb::Options options;
+        options.create_if_missing = false;
+        options.error_if_exists = false;
+        options.write_buffer_size = 500 * 1048576; // 500MB write buffer
+        options.block_cache = leveldb::NewLRUCache(1500 * 1048576);  // 1.5GB cache
+        
+        boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
+
+        directory_iterator end_itr;
+        for (directory_iterator itr(directoryName); itr != end_itr;itr++) {
+            if (is_directory(itr->status())) {
+                std::string mapName = itr->path().filename().string();
+                leveldb::Status status = leveldb::DB::Open(options, itr->path().string(), &db);
+                assert(status.ok());
+                maps_.insert(mapName, db);
+            }
+        }
     }
 
     ResponseCode::type ping() {
@@ -48,6 +71,8 @@ public:
         leveldb::Options options;
         options.create_if_missing = true;
         options.error_if_exists = true;
+        options.write_buffer_size = 500 * 1048576; // 500MB write buffer
+        options.block_cache = leveldb::NewLRUCache(1500 * 1048576);  // 1.5GB cache
         leveldb::Status status = leveldb::DB::Open(options, directoryName_ + "/" + mapName, &db);
         if (!status.ok()) {
             // TODO check return code
@@ -135,7 +160,7 @@ public:
         }
 
         leveldb::WriteOptions options;
-        options.sync = true;
+        options.sync = false;
         leveldb::Status status = itr->second->Put(options, key, value);
 
         if (!status.ok()) {
@@ -160,7 +185,7 @@ public:
         }
 
         leveldb::WriteOptions options;
-        options.sync = true;
+        options.sync = false;
         status = itr->second->Put(options, key, value);
         if (!status.ok()) {
             return ResponseCode::Error;
@@ -184,7 +209,7 @@ public:
         }
 
         leveldb::WriteOptions options;
-        options.sync = true;
+        options.sync = false;
         status = itr->second->Put(options, key, value);
         if (!status.ok()) {
             return ResponseCode::Error;
@@ -199,7 +224,7 @@ public:
             return ResponseCode::MapNotFound;
         }
         leveldb::WriteOptions options;
-        options.sync = true;
+        options.sync = false;
         leveldb::Status status = itr->second->Delete(options, key);
         if (status.IsNotFound()) {
             return ResponseCode::RecordNotFound;
