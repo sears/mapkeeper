@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
         usage(argv[0]);
     }
     int port = 9090;
-    size_t numThreads = 16;
+    size_t numThreads = 32;
     shared_ptr<StubServer> handler(new StubServer());
     shared_ptr<TProcessor> processor(new MapKeeperProcessor(handler));
     shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
         server = new TNonblockingServer(processor, protocolFactory, port, threadManager);
     } else if (strcmp(argv[1], "threaded") == 0) {
         server = new TThreadedServer(processor, serverTransport, transportFactory, protocolFactory);
-    } else if (strcmp(argv[1], "threadpool")) {
+    } else if (strcmp(argv[1], "threadpool") == 0) {
         server = new TThreadPoolServer(processor, serverTransport, transportFactory, protocolFactory, threadManager);
     } else {
         usage(argv[0]);
