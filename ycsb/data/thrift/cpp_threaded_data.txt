@@ -1,80 +1,78 @@
 YCSB Client 0.1
-Command line: -load -db com.yahoo.ycsb.db.MapKeeperClient -P workloads/workloada -p measurementtype=timeseries -p timeseries.granularity=10000 -s
+Command line: -load -db com.yahoo.ycsb.db.MapKeeperClient -P workloads/workloada -p measurementtype=timeseries -p timeseries.granularity=1000 -s
  0 sec: 0 operations; 
- 10 sec: 2467111 operations; 246071.31 current ops/sec; [INSERT AverageLatency(ms)=0.84] 
- 20 sec: 5341559 operations; 287272.44 current ops/sec; [INSERT AverageLatency(ms)=0.57] 
- 30 sec: 8250373 operations; 290823.24 current ops/sec; [INSERT AverageLatency(ms)=0.97] 
- 40 sec: 11160182 operations; 290864.55 current ops/sec; [INSERT AverageLatency(ms)=0] 
- 50 sec: 14079965 operations; 291890.73 current ops/sec; [INSERT AverageLatency(ms)=1] 
- 60 sec: 17009219 operations; 292837.55 current ops/sec; [INSERT AverageLatency(ms)=1] 
- 70 sec: 19924953 operations; 291456.82 current ops/sec; [INSERT AverageLatency(ms)=0.02] 
- 80 sec: 22834659 operations; 290883.33 current ops/sec; [INSERT AverageLatency(ms)=0.98] 
- 90 sec: 25747420 operations; 291188.74 current ops/sec; [INSERT AverageLatency(ms)=0.97] 
- 100 sec: 28648712 operations; 290013.19 current ops/sec; [INSERT AverageLatency(ms)=0.05] 
- 110 sec: 31565928 operations; 291604.96 current ops/sec; [INSERT AverageLatency(ms)=0.07] 
- 120 sec: 34490099 operations; 292329.4 current ops/sec; [INSERT AverageLatency(ms)=1.42] 
- 130 sec: 37405441 operations; 291446.77 current ops/sec; [INSERT AverageLatency(ms)=0.16] 
- 140 sec: 40319335 operations; 291272.89 current ops/sec; [INSERT AverageLatency(ms)=0.96] 
- 150 sec: 43246202 operations; 292569.67 current ops/sec; [INSERT AverageLatency(ms)=1] 
- 160 sec: 46163214 operations; 291613.72 current ops/sec; [INSERT AverageLatency(ms)=0] 
- 170 sec: 49086779 operations; 292268.82 current ops/sec; [INSERT AverageLatency(ms)=0.52] 
- 180 sec: 52003969 operations; 291602.36 current ops/sec; [INSERT AverageLatency(ms)=1] 
- 190 sec: 54925011 operations; 292016.6 current ops/sec; [INSERT AverageLatency(ms)=0.43] 
- 200 sec: 57841104 operations; 291492.7 current ops/sec; [INSERT AverageLatency(ms)=0.61] 
- 210 sec: 60753736 operations; 291175.85 current ops/sec; [INSERT AverageLatency(ms)=1.04] 
- 220 sec: 63669696 operations; 291508.55 current ops/sec; [INSERT AverageLatency(ms)=0.3] 
- 230 sec: 66602632 operations; 293205.64 current ops/sec; [INSERT AverageLatency(ms)=0.76] 
- 240 sec: 69540002 operations; 293648.91 current ops/sec; [INSERT AverageLatency(ms)=1] 
- 250 sec: 72470133 operations; 292925.22 current ops/sec; [INSERT AverageLatency(ms)=1] 
- 260 sec: 75403849 operations; 293254.3 current ops/sec; [INSERT AverageLatency(ms)=0.1] 
- 270 sec: 78318638 operations; 291391.48 current ops/sec; [INSERT AverageLatency(ms)=0.83] 
- 280 sec: 81234937 operations; 291542.44 current ops/sec; [INSERT AverageLatency(ms)=1] 
- 290 sec: 84151742 operations; 291563.87 current ops/sec; [INSERT AverageLatency(ms)=0.07] 
- 300 sec: 87076257 operations; 292334.57 current ops/sec; [INSERT AverageLatency(ms)=1] 
- 310 sec: 89996509 operations; 291937.62 current ops/sec; [INSERT AverageLatency(ms)=0.98] 
- 320 sec: 92908536 operations; 291086.27 current ops/sec; [INSERT AverageLatency(ms)=0] 
- 330 sec: 95822873 operations; 291317.17 current ops/sec; [INSERT AverageLatency(ms)=0.44] 
- 340 sec: 98736875 operations; 291312.81 current ops/sec; [INSERT AverageLatency(ms)=1] 
- 344 sec: 99999900 operations; 276857.74 current ops/sec;  
-[OVERALL], RunTime(ms), 344704.0
-[OVERALL], Throughput(ops/sec), 290103.97326401784
-[INSERT], Operations, 99999900
-[INSERT], AverageLatency(ms), 0.6415895715895716
+ 1 sec: 128600 operations; 125219.08 current ops/sec; [INSERT AverageLatency(ms)=5.86] 
+ 2 sec: 389707 operations; 260066.73 current ops/sec; [INSERT AverageLatency(ms)=0.02] 
+ 3 sec: 657284 operations; 266776.67 current ops/sec; [INSERT AverageLatency(ms)=0.24] 
+ 4 sec: 944067 operations; 285925.22 current ops/sec; [INSERT AverageLatency(ms)=0.59] 
+ 5 sec: 1248926 operations; 303947.16 current ops/sec; [INSERT AverageLatency(ms)=0.23] 
+ 6 sec: 1558540 operations; 308687.94 current ops/sec; [INSERT AverageLatency(ms)=0.07] 
+ 7 sec: 1867308 operations; 307844.47 current ops/sec; [INSERT AverageLatency(ms)=0.8] 
+ 8 sec: 2177906 operations; 309668.99 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 9 sec: 2488327 operations; 309492.52 current ops/sec; [INSERT AverageLatency(ms)=0.96] 
+ 10 sec: 2799232 operations; 309975.07 current ops/sec; [INSERT AverageLatency(ms)=0.39] 
+ 11 sec: 3108674 operations; 308516.45 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 12 sec: 3418688 operations; 309086.74 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 13 sec: 3726226 operations; 306618.15 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 14 sec: 4034752 operations; 307603.19 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 15 sec: 4342061 operations; 306389.83 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 16 sec: 4651148 operations; 308162.51 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 17 sec: 4958610 operations; 306542.37 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 18 sec: 5265205 operations; 305677.97 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 19 sec: 5570146 operations; 304332.34 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 20 sec: 5874385 operations; 303329.01 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 21 sec: 6174164 operations; 298882.35 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 22 sec: 6472828 operations; 297770.69 current ops/sec; [INSERT AverageLatency(ms)=1] 
+ 23 sec: 6772190 operations; 298466.6 current ops/sec; [INSERT AverageLatency(ms)=0.78] 
+ 24 sec: 7069445 operations; 296365.9 current ops/sec; [INSERT AverageLatency(ms)=0.6] 
+ 25 sec: 7370936 operations; 300589.23 current ops/sec; [INSERT AverageLatency(ms)=0.8] 
+ 26 sec: 7668180 operations; 296354.94 current ops/sec; [INSERT AverageLatency(ms)=0.34] 
+ 27 sec: 7967100 operations; 297432.84 current ops/sec; [INSERT AverageLatency(ms)=0.36] 
+ 28 sec: 8269877 operations; 301871.39 current ops/sec; [INSERT AverageLatency(ms)=0.04] 
+ 29 sec: 8568480 operations; 297709.87 current ops/sec; [INSERT AverageLatency(ms)=0.69] 
+ 30 sec: 8867484 operations; 298109.67 current ops/sec; [INSERT AverageLatency(ms)=0] 
+ 31 sec: 9167552 operations; 299170.49 current ops/sec; [INSERT AverageLatency(ms)=0] 
+ 32 sec: 9467221 operations; 298772.68 current ops/sec; [INSERT AverageLatency(ms)=0] 
+ 33 sec: 9765469 operations; 297652.69 current ops/sec; [INSERT AverageLatency(ms)=0] 
+ 33 sec: 9999900 operations; 288708.13 current ops/sec;  
+[OVERALL], RunTime(ms), 33938.0
+[OVERALL], Throughput(ops/sec), 294654.9590429607
+[INSERT], Operations, 9999900
+[INSERT], AverageLatency(ms), 0.6459874598745987
 [INSERT], MinLatency(ms), 0
-[INSERT], MaxLatency(ms), 1066
-[INSERT], Return=0, 99984628
-[INSERT], 0, 0.7822008339397596
-[INSERT], 10000, 0.670986156859254
-[INSERT], 20000, 0.6251987854266332
-[INSERT], 30000, 0.6107221115623437
-[INSERT], 40000, 0.6603194124236497
-[INSERT], 50000, 0.6398163185496748
-[INSERT], 60000, 0.6101537728615372
-[INSERT], 70000, 0.6438382524296532
-[INSERT], 80000, 0.6380850055713589
-[INSERT], 90000, 0.6375788637417216
-[INSERT], 100000, 0.6412761517251832
-[INSERT], 110000, 0.6593984514877252
-[INSERT], 120000, 0.665190486308802
-[INSERT], 130000, 0.6271890446740728
-[INSERT], 140000, 0.65468872568447
-[INSERT], 150000, 0.6267834724804313
-[INSERT], 160000, 0.6209094143161092
-[INSERT], 170000, 0.630409315813371
-[INSERT], 180000, 0.6554952743441993
-[INSERT], 190000, 0.6561439608796588
-[INSERT], 200000, 0.6381172577153673
-[INSERT], 210000, 0.6378333901214717
-[INSERT], 220000, 0.6394519157954889
-[INSERT], 230000, 0.6454066725601758
-[INSERT], 240000, 0.6317751514845279
-[INSERT], 250000, 0.6820366144037295
-[INSERT], 260000, 0.6327607282800503
-[INSERT], 270000, 0.6506746240968393
-[INSERT], 280000, 0.6289387446433072
-[INSERT], 290000, 0.6410973177308618
-[INSERT], 300000, 0.6370120403015077
-[INSERT], 310000, 0.6533323989211662
-[INSERT], 320000, 0.6453781466451461
-[INSERT], 330000, 0.6153065561175624
-[INSERT], 340000, 0.4092852042915167
+[INSERT], MaxLatency(ms), 738
+[INSERT], Return=0, 9997313
+[INSERT], 0, 0.7968600610580315
+[INSERT], 1000, 0.8218587491081683
+[INSERT], 2000, 0.75259507813259
+[INSERT], 3000, 0.7846807565195656
+[INSERT], 4000, 0.6434455405267975
+[INSERT], 5000, 0.6445937996639508
+[INSERT], 6000, 0.6045410837604291
+[INSERT], 7000, 0.6442792656071399
+[INSERT], 8000, 0.7399506415308879
+[INSERT], 9000, 0.6234897705837781
+[INSERT], 10000, 0.6722058055538436
+[INSERT], 11000, 0.6674814961306407
+[INSERT], 12000, 0.5473153685470908
+[INSERT], 13000, 0.6252194608091763
+[INSERT], 14000, 0.6305016355552073
+[INSERT], 15000, 0.6258332089334276
+[INSERT], 16000, 0.6247133691479194
+[INSERT], 17000, 0.6345164668152559
+[INSERT], 18000, 0.6045439492158425
+[INSERT], 19000, 0.7312223251642769
+[INSERT], 20000, 0.539341634569372
+[INSERT], 21000, 0.7564395009891397
+[INSERT], 22000, 0.6129643999090264
+[INSERT], 23000, 0.6648512395857586
+[INSERT], 24000, 0.63488887110115
+[INSERT], 25000, 0.6869672362945906
+[INSERT], 26000, 0.6363073860349999
+[INSERT], 27000, 0.6283881139843857
+[INSERT], 28000, 0.6951078977163918
+[INSERT], 29000, 0.5918125712752398
+[INSERT], 30000, 0.5898983619597659
+[INSERT], 31000, 0.6466767285663132
+[INSERT], 32000, 0.5718068394506665
+[INSERT], 33000, 0.337963533980087
