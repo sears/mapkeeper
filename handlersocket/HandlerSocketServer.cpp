@@ -5,7 +5,9 @@
  * http://yoshinorimatsunobu.blogspot.com/search/label/handlersocket
  */
 #include "MapKeeper.h"
+#include "HandlerSocketClient.h"
 
+#include <boost/thread/tss.hpp>
 #include <protocol/TBinaryProtocol.h>
 #include <server/TThreadedServer.h>
 #include <transport/TServerSocket.h>
@@ -30,6 +32,13 @@ public:
     }
 
     ResponseCode::type addMap(const std::string& mapName) {
+        initClient();
+        HandlerSocketClient::ResponseCode rc = client_->createTable(mapName);
+        if (rc == HandlerSocketClient::TableExists) {
+            return ResponseCode::MapExists;
+        } else if (rc != HandlerSocketClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
@@ -58,6 +67,8 @@ public:
     }
 
     ResponseCode::type insert(const std::string& mapName, const std::string& key, const std::string& value) {
+        initClient();
+        client_->insert(mapName, key, value);
         return ResponseCode::Success;
     }
 
@@ -68,6 +79,15 @@ public:
     ResponseCode::type remove(const std::string& mapName, const std::string& key) {
         return ResponseCode::Success;
     }
+
+private:
+    void initClient() {
+        if (client_.get() == NULL) {
+            printf("hello world\n");
+            client_.reset(new HandlerSocketClient("localhost", 3306, 9998, 9999));
+        }
+    }
+    boost::thread_specific_ptr<HandlerSocketClient> client_;
 };
 
 int main(int argc, char **argv) {
