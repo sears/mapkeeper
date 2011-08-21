@@ -34,16 +34,16 @@ public:
             const int32_t maxRecords, const int32_t maxBytes);
 
 private:
+    static const std::string DBNAME;
+    static const std::string FIELDS;
     std::string escapeString(const std::string& str);
     MYSQL mysql_;
+    hstcpcli_ptr reader_;
+    hstcpcli_ptr writer_;
     std::string host_;
     uint32_t mysqlPort_;
     uint32_t hsReaderPort_;
     uint32_t hsWriterPort_;
-    boost::ptr_map<std::string, dena::hstcpcli_i> readers_;
-    boost::ptr_map<std::string, dena::hstcpcli_i> writers_;
-    hstcpcli_ptr cli;
-    hstcpcli_ptr reader_;
 };
 
 #endif

@@ -5,6 +5,9 @@
 
 using namespace dena;
 
+const std::string HandlerSocketClient::DBNAME = "mapkeeper";
+const std::string HandlerSocketClient::FIELDS = "record_key,record_value";
+
 HandlerSocketClient::
 HandlerSocketClient(const std::string& host, uint32_t mysqlPort, 
                     uint32_t hsReaderPort, uint32_t hsWriterPort) :
@@ -29,15 +32,18 @@ HandlerSocketClient(const std::string& host, uint32_t mysqlPort,
         NULL,           // unix socket
         0               // flags
     ));
-    assert(0 == mysql_query(&mysql_, "create database if not exists mapkeeper"));
-    assert(0 == mysql_query(&mysql_, "use mapkeeper"));
+    std::string query = "create database if not exists " + DBNAME;
+    printf("%s\n", query.c_str());
+    assert(0 == mysql_query(&mysql_, query.c_str()));
+    query = "use " + DBNAME;
+    assert(0 == mysql_query(&mysql_, query.c_str()));
     dena::config conf;
-    conf["host"] = "localhost";
-    conf["port"] = "9999";
+    conf["host"] = host_;
+    conf["port"] = boost::lexical_cast<std::string>(hsWriterPort_);
     socket_args sockargs;
     sockargs.set(conf);
-    cli = hstcpcli_i::create(sockargs);
-    conf["port"] = "9998";
+    writer_ = hstcpcli_i::create(sockargs);
+    conf["port"] = boost::lexical_cast<std::string>(hsReaderPort_);
     sockargs.set(conf);
     reader_ = hstcpcli_i::create(sockargs);
 }
@@ -63,7 +69,7 @@ createTable(const std::string& tableName)
 HandlerSocketClient::ResponseCode HandlerSocketClient::
 dropTable(const std::string& tableName)
 {
-    std::string query;
+    std::string query = "drop table " + escapeString(tableName);
     int result = mysql_query(&mysql_, query.c_str());
     if (result != 0) {
         uint32_t error = mysql_errno(&mysql_);
@@ -80,9 +86,6 @@ dropTable(const std::string& tableName)
 HandlerSocketClient::ResponseCode HandlerSocketClient::
 insert(const std::string& tableName, const std::string& key, const std::string& value)
 {
-    const std::string dbname = "mapkeeper";
-    const std::string index = "PRIMARY";
-    const std::string fields = "record_key,record_value";
     const std::string op = "+";
     const int limit = 1;
     const int skip = 0;
@@ -94,38 +97,66 @@ insert(const std::string& tableName, const std::string& key, const std::string& 
     size_t num_keys = keyrefs.size();
     const string_ref op_ref(op.data(), op.size());
     size_t numflds = 0;
-    cli->request_buf_open_index(0, dbname.c_str(), tableName.c_str(), index.c_str(), fields.c_str());
-    assert(cli->request_send() == 0);
-    assert(cli->response_recv(numflds) == 0);
-    cli->response_buf_remove();
-    assert(cli->stable_point());
-
-    int code = 0;
-    cli->request_buf_exec_generic(0, op_ref, &keyrefs[0], num_keys, limit, skip, string_ref(), 0, 0);
-    assert(cli->request_send() == 0);
-    if ((code = cli->response_recv(numflds)) != 0) {
-      fprintf(stderr, "response_recv: %d\n", cli->get_error_code());
-      fprintf(stderr, "response_recv: %d\n", code);
-      fprintf(stderr, "response_recv: %s\n", cli->get_error().c_str());
-      exit(1);   
+    writer_->request_buf_open_index(0, DBNAME.c_str(), tableName.c_str(), "PRIMARY", FIELDS.c_str());
+    assert(writer_->request_send() == 0);
+    int code;
+    if ((code = writer_->response_recv(numflds)) != 0) {
+        // TODO handlersocket doesn't set error code properly, and it's
+        // hard to tell why the request failed.
+        writer_->response_buf_remove();
+      return TableNotFound;
     }
-    cli->response_buf_remove();
-    assert(cli->stable_point());
+    writer_->response_buf_remove();
+    writer_->request_buf_exec_generic(0, op_ref, &keyrefs[0], num_keys, limit, skip, string_ref(), 0, 0);
+    assert(writer_->request_send() == 0);
+    if (writer_->response_recv(numflds) != 0) {
+        // TODO handlersocket doesn't set error code properly, and it's
+        // hard to tell why the request failed.
+        writer_->response_buf_remove();
+        return RecordExists;
+    }
+    writer_->response_buf_remove();
     return Success;
 }
 
 HandlerSocketClient::ResponseCode HandlerSocketClient::
 update(const std::string& tableName, const std::string& key, const std::string& value)
 {
+    const std::string op = "=";
+    const std::string modOp = "U";
+    const int limit = 1;
+    const int skip = 0;
+    std::vector<string_ref> keyrefs;
+    const string_ref ref(key.data(), key.size());
+    keyrefs.push_back(ref);
+    const string_ref ref2(value.data(), value.size());
+    keyrefs.push_back(ref2);
+    const string_ref op_ref(op.data(), op.size());
+    const string_ref modop_ref(modOp.data(), modOp.size());
+    size_t numflds = 0;
+    writer_->request_buf_open_index(0, DBNAME.c_str(), tableName.c_str(), "PRIMARY", FIELDS.c_str());
+    assert(writer_->request_send() == 0);
+    if (writer_->response_recv(numflds) != 0) {
+        // TODO handlersocket doesn't set error code properly, and it's
+        // hard to tell why the request failed.
+        writer_->response_buf_remove();
+      return TableNotFound;
+    }
+    writer_->response_buf_remove();
+    writer_->request_buf_exec_generic(0, op_ref, &keyrefs[0], 1, limit, skip, modop_ref, &keyrefs[0], 2);
+    assert(writer_->request_send() == 0);
+    if (writer_->response_recv(numflds) != 0) {
+        // TODO this doesn't fail even if the record doesn't exist.
+        writer_->response_buf_remove();
+        return RecordNotFound;
+    }
+    writer_->response_buf_remove();
     return Success;
 }
 
 HandlerSocketClient::ResponseCode HandlerSocketClient::
 get(const std::string& tableName, const std::string& key, std::string& value)
 {
-    const std::string dbname = "mapkeeper";
-    const std::string index = "PRIMARY";
-    const std::string fields = "record_key,record_value";
     const std::string op = "=";
     const int limit = 1;
     const int skip = 0;
@@ -135,38 +166,59 @@ get(const std::string& tableName, const std::string& key, std::string& value)
     size_t num_keys = keyrefs.size();
     const string_ref op_ref(op.data(), op.size());
     size_t numflds = 0;
-    int code = 0;
-    assert(reader_->stable_point());
-    reader_->request_buf_open_index(10, dbname.c_str(), tableName.c_str(), index.c_str(), fields.c_str());
+    reader_->request_buf_open_index(10, DBNAME.c_str(), tableName.c_str(), "PRIMARY", FIELDS.c_str());
     assert(reader_->request_send() == 0);
-    assert(reader_->response_recv(numflds) == 0);
+    if (reader_->response_recv(numflds) != 0) {
+        reader_->response_buf_remove();
+        return TableNotFound;
+    }
     reader_->response_buf_remove();
-    assert(reader_->stable_point());
 
     reader_->request_buf_exec_generic(10, op_ref, &keyrefs[0], num_keys, limit, skip, string_ref(), 0, 0);
     assert(reader_->request_send() == 0);
-    if ((code = reader_->response_recv(numflds)) != 0) {
-      fprintf(stderr, "response_recv: %d\n", reader_->get_error_code());
-      fprintf(stderr, "response_recv: %d\n", code);
-      fprintf(stderr, "response_recv: %s\n", reader_->get_error().c_str());
-      exit(1);   
-    }
+    assert(reader_->response_recv(numflds) == 0);
     assert(numflds == 2);
     const string_ref *const row = reader_->get_next_row();
     if (row == 0) {
         reader_->response_buf_remove();
-        assert(reader_->stable_point());
         return RecordNotFound;
     }
     value.assign(row[1].begin(), row[1].size());
     reader_->response_buf_remove();
-    assert(reader_->stable_point());
     return Success;
 }
 
 HandlerSocketClient::ResponseCode HandlerSocketClient::
 remove(const std::string& tableName, const std::string& key)
 {
+    const std::string op = "=";
+    const std::string modOp = "D";
+    const int limit = 1;
+    const int skip = 0;
+    std::vector<string_ref> keyrefs;
+    const string_ref ref(key.data(), key.size());
+    keyrefs.push_back(ref);
+    size_t numKeys = keyrefs.size();
+    const string_ref op_ref(op.data(), op.size());
+    const string_ref modop_ref(modOp.data(), modOp.size());
+    size_t numflds = 0;
+    writer_->request_buf_open_index(0, DBNAME.c_str(), tableName.c_str(), "PRIMARY", FIELDS.c_str());
+    assert(writer_->request_send() == 0);
+    if (writer_->response_recv(numflds) != 0) {
+        // TODO handlersocket doesn't set error code properly, and it's
+        // hard to tell why the request failed.
+        writer_->response_buf_remove();
+      return TableNotFound;
+    }
+    writer_->response_buf_remove();
+    writer_->request_buf_exec_generic(0, op_ref, &keyrefs[0], numKeys, limit, skip, modop_ref, 0, 0);
+    assert(writer_->request_send() == 0);
+    if (writer_->response_recv(numflds) != 0) {
+        // TODO this doesn't fail even if the record doesn't exist.
+        writer_->response_buf_remove();
+        return RecordNotFound;
+    }
+    writer_->response_buf_remove();
     return Success;
 }
 

@@ -43,6 +43,13 @@ public:
     }
 
     ResponseCode::type dropMap(const std::string& mapName) {
+        initClient();
+        HandlerSocketClient::ResponseCode rc = client_->dropTable(mapName);
+        if (rc == HandlerSocketClient::TableNotFound) {
+            return ResponseCode::MapNotFound;
+        } else if (rc != HandlerSocketClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
@@ -80,11 +87,27 @@ public:
 
     ResponseCode::type insert(const std::string& mapName, const std::string& key, const std::string& value) {
         initClient();
-        client_->insert(mapName, key, value);
+        HandlerSocketClient::ResponseCode rc = client_->insert(mapName, key, value);
+        if (rc == HandlerSocketClient::TableNotFound) {
+            return ResponseCode::MapNotFound;
+        } else if (rc == HandlerSocketClient::RecordExists) {
+            return ResponseCode::RecordExists;
+        } else if (rc != HandlerSocketClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
     ResponseCode::type update(const std::string& mapName, const std::string& key, const std::string& value) {
+        initClient();
+        HandlerSocketClient::ResponseCode rc = client_->update(mapName, key, value);
+        if (rc == HandlerSocketClient::TableNotFound) {
+            return ResponseCode::MapNotFound;
+        } else if (rc == HandlerSocketClient::RecordNotFound) {
+            return ResponseCode::RecordNotFound;
+        } else if (rc != HandlerSocketClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
