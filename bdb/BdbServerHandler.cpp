@@ -5,9 +5,7 @@
 #include <stdio.h>
 #include <boost/thread/tss.hpp>
 #include <boost/thread/thread.hpp>
-#include <server/TNonblockingServer.h>
-#include <concurrency/ThreadManager.h>
-#include <concurrency/PosixThreadFactory.h>
+#include <server/TThreadedServer.h>
 #include "BdbServerHandler.h"
 #include "BdbIterator.h"
 #include "RecordBuffer.h"
@@ -337,7 +335,6 @@ remove(const std::string& mapName, const std::string& recordName)
 
 int main(int argc, char **argv) {
     int port = 9090;
-    size_t numThreads = 32;
     std::string homeDir = "data";
     uint32_t pageSizeKb = 16;
     uint32_t numRetries = 100;
@@ -351,16 +348,11 @@ int main(int argc, char **argv) {
     valueBufferSizeBytes,
     checkpointFrequencyMs,
     checkpointMinChangeKb);
- 
     shared_ptr<TProcessor> processor(new MapKeeperProcessor(handler));
     shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
     shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
-    shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(numThreads);
-    shared_ptr<ThreadFactory> threadFactory(new PosixThreadFactory());
-    threadManager->threadFactory(threadFactory);
-    threadManager->start();
-    TNonblockingServer server(processor, protocolFactory, port, threadManager);
+    TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
     server.serve();
     return 0;
 }
