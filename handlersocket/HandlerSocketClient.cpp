@@ -14,7 +14,8 @@ HandlerSocketClient(const std::string& host, uint32_t mysqlPort,
     host_(host),
     mysqlPort_(mysqlPort),
     hsReaderPort_(hsReaderPort),
-    hsWriterPort_(hsWriterPort)
+    hsWriterPort_(hsWriterPort),
+    currentTableId_(0)
 {
     assert(&mysql_ == mysql_init(&mysql_));
     
@@ -33,7 +34,6 @@ HandlerSocketClient(const std::string& host, uint32_t mysqlPort,
         0               // flags
     ));
     std::string query = "create database if not exists " + DBNAME;
-    printf("%s\n", query.c_str());
     assert(0 == mysql_query(&mysql_, query.c_str()));
     query = "use " + DBNAME;
     assert(0 == mysql_query(&mysql_, query.c_str()));
@@ -97,16 +97,11 @@ insert(const std::string& tableName, const std::string& key, const std::string& 
     size_t num_keys = keyrefs.size();
     const string_ref op_ref(op.data(), op.size());
     size_t numflds = 0;
-    writer_->request_buf_open_index(0, DBNAME.c_str(), tableName.c_str(), "PRIMARY", FIELDS.c_str());
-    assert(writer_->request_send() == 0);
-    int code;
-    if ((code = writer_->response_recv(numflds)) != 0) {
-        // TODO handlersocket doesn't set error code properly, and it's
-        // hard to tell why the request failed.
-        writer_->response_buf_remove();
-      return TableNotFound;
+    uint32_t id;
+    ResponseCode rc = getTableId(tableName, id);
+    if (rc != Success) {
+        return rc;
     }
-    writer_->response_buf_remove();
     writer_->request_buf_exec_generic(0, op_ref, &keyrefs[0], num_keys, limit, skip, string_ref(), 0, 0);
     assert(writer_->request_send() == 0);
     if (writer_->response_recv(numflds) != 0) {
@@ -134,16 +129,12 @@ update(const std::string& tableName, const std::string& key, const std::string& 
     const string_ref op_ref(op.data(), op.size());
     const string_ref modop_ref(modOp.data(), modOp.size());
     size_t numflds = 0;
-    writer_->request_buf_open_index(0, DBNAME.c_str(), tableName.c_str(), "PRIMARY", FIELDS.c_str());
-    assert(writer_->request_send() == 0);
-    if (writer_->response_recv(numflds) != 0) {
-        // TODO handlersocket doesn't set error code properly, and it's
-        // hard to tell why the request failed.
-        writer_->response_buf_remove();
-      return TableNotFound;
+    uint32_t id;
+    ResponseCode rc = getTableId(tableName, id);
+    if (rc != Success) {
+        return rc;
     }
-    writer_->response_buf_remove();
-    writer_->request_buf_exec_generic(0, op_ref, &keyrefs[0], 1, limit, skip, modop_ref, &keyrefs[0], 2);
+    writer_->request_buf_exec_generic(id, op_ref, &keyrefs[0], 1, limit, skip, modop_ref, &keyrefs[0], 2);
     assert(writer_->request_send() == 0);
     if (writer_->response_recv(numflds) != 0) {
         // TODO this doesn't fail even if the record doesn't exist.
@@ -166,15 +157,12 @@ get(const std::string& tableName, const std::string& key, std::string& value)
     size_t num_keys = keyrefs.size();
     const string_ref op_ref(op.data(), op.size());
     size_t numflds = 0;
-    reader_->request_buf_open_index(10, DBNAME.c_str(), tableName.c_str(), "PRIMARY", FIELDS.c_str());
-    assert(reader_->request_send() == 0);
-    if (reader_->response_recv(numflds) != 0) {
-        reader_->response_buf_remove();
-        return TableNotFound;
+    uint32_t id;
+    ResponseCode rc = getTableId(tableName, id);
+    if (rc != Success) {
+        return rc;
     }
-    reader_->response_buf_remove();
-
-    reader_->request_buf_exec_generic(10, op_ref, &keyrefs[0], num_keys, limit, skip, string_ref(), 0, 0);
+    reader_->request_buf_exec_generic(id, op_ref, &keyrefs[0], num_keys, limit, skip, string_ref(), 0, 0);
     assert(reader_->request_send() == 0);
     assert(reader_->response_recv(numflds) == 0);
     assert(numflds == 2);
@@ -202,16 +190,12 @@ remove(const std::string& tableName, const std::string& key)
     const string_ref op_ref(op.data(), op.size());
     const string_ref modop_ref(modOp.data(), modOp.size());
     size_t numflds = 0;
-    writer_->request_buf_open_index(0, DBNAME.c_str(), tableName.c_str(), "PRIMARY", FIELDS.c_str());
-    assert(writer_->request_send() == 0);
-    if (writer_->response_recv(numflds) != 0) {
-        // TODO handlersocket doesn't set error code properly, and it's
-        // hard to tell why the request failed.
-        writer_->response_buf_remove();
-      return TableNotFound;
+    uint32_t id;
+    ResponseCode rc = getTableId(tableName, id);
+    if (rc != Success) {
+        return rc;
     }
-    writer_->response_buf_remove();
-    writer_->request_buf_exec_generic(0, op_ref, &keyrefs[0], numKeys, limit, skip, modop_ref, 0, 0);
+    writer_->request_buf_exec_generic(id, op_ref, &keyrefs[0], numKeys, limit, skip, modop_ref, 0, 0);
     assert(writer_->request_send() == 0);
     if (writer_->response_recv(numflds) != 0) {
         // TODO this doesn't fail even if the record doesn't exist.
@@ -237,4 +221,42 @@ escapeString(const std::string& str)
     char buffer[2 * str.length() + 1];
     uint64_t length = mysql_real_escape_string(&mysql_, buffer, str.c_str(), str.length());
     return std::string(buffer, length);
+}
+
+HandlerSocketClient::ResponseCode HandlerSocketClient::
+getTableId(const std::string& tableName, uint32_t& id)
+{
+    std::map<std::string, uint32_t>::iterator itr = tableIds_.find(tableName);
+    if (itr != tableIds_.end()) {
+        id = itr->second;
+        return Success;
+    }
+    size_t numFields = 0;
+    id = currentTableId_;
+    currentTableId_++;
+
+    // open index for writer
+    writer_->request_buf_open_index(id, DBNAME.c_str(), tableName.c_str(), "PRIMARY", FIELDS.c_str());
+    assert(writer_->request_send() == 0);
+    int code;
+    if ((code = writer_->response_recv(numFields)) != 0) {
+        // TODO handlersocket doesn't set error code properly, and it's
+        // hard to tell why the request failed.
+        writer_->response_buf_remove();
+      return TableNotFound;
+    }
+    writer_->response_buf_remove();
+
+    // open index for reader
+    reader_->request_buf_open_index(id, DBNAME.c_str(), tableName.c_str(), "PRIMARY", FIELDS.c_str());
+    assert(reader_->request_send() == 0);
+    if ((code = reader_->response_recv(numFields)) != 0) {
+        // TODO handlersocket doesn't set error code properly, and it's
+        // hard to tell why the request failed.
+        reader_->response_buf_remove();
+      return TableNotFound;
+    }
+    reader_->response_buf_remove();
+    tableIds_[tableName] = id;
+    return Success;
 }

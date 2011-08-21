@@ -37,6 +37,7 @@ private:
     static const std::string DBNAME;
     static const std::string FIELDS;
     std::string escapeString(const std::string& str);
+    ResponseCode getTableId(const std::string& tableName, uint32_t& id);
     MYSQL mysql_;
     hstcpcli_ptr reader_;
     hstcpcli_ptr writer_;
@@ -44,6 +45,8 @@ private:
     uint32_t mysqlPort_;
     uint32_t hsReaderPort_;
     uint32_t hsWriterPort_;
+    uint32_t currentTableId_;
+    std::map<std::string, uint32_t> tableIds_;
 };
 
 #endif
