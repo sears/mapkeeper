@@ -7,13 +7,9 @@
 
 #include <boost/thread/shared_mutex.hpp>
 #include <protocol/TBinaryProtocol.h>
-#include <server/TSimpleServer.h>
-#include <server/TThreadPoolServer.h>
-#include <server/TNonblockingServer.h>
+#include <server/TThreadedServer.h>
 #include <transport/TServerSocket.h>
 #include <transport/TBufferTransports.h>
-#include <thrift/concurrency/ThreadManager.h>
-#include <thrift/concurrency/PosixThreadFactory.h>
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -143,17 +139,12 @@ private:
 
 int main(int argc, char **argv) {
     int port = 9090;
-    size_t numThreads = 32;
     shared_ptr<StlMapServer> handler(new StlMapServer());
     shared_ptr<TProcessor> processor(new MapKeeperProcessor(handler));
     shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
     shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
-    shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(numThreads);
-    shared_ptr<ThreadFactory> threadFactory(new PosixThreadFactory());
-    threadManager->threadFactory(threadFactory);
-    threadManager->start();
-    TNonblockingServer server(processor, protocolFactory, port, threadManager);
+    TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
     server.serve();
     return 0;
 }
