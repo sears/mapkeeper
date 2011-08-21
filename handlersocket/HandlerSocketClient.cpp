@@ -36,10 +36,10 @@ HandlerSocketClient(const std::string& host, uint32_t mysqlPort,
     conf["port"] = "9999";
     socket_args sockargs;
     sockargs.set(conf);
-    const std::string dbname = "mapkeeper";
-    const std::string index = "PRIMARY";
-    const std::string fields = "record_key,record_value";
     cli = hstcpcli_i::create(sockargs);
+    conf["port"] = "9998";
+    sockargs.set(conf);
+    reader_ = hstcpcli_i::create(sockargs);
 }
 
 HandlerSocketClient::ResponseCode HandlerSocketClient::
@@ -80,11 +80,6 @@ dropTable(const std::string& tableName)
 HandlerSocketClient::ResponseCode HandlerSocketClient::
 insert(const std::string& tableName, const std::string& key, const std::string& value)
 {
-    dena::config conf;
-    conf["host"] = "localhost";
-    conf["port"] = "9999";
-    socket_args sockargs;
-    sockargs.set(conf);
     const std::string dbname = "mapkeeper";
     const std::string index = "PRIMARY";
     const std::string fields = "record_key,record_value";
@@ -105,12 +100,16 @@ insert(const std::string& tableName, const std::string& key, const std::string& 
     cli->response_buf_remove();
     assert(cli->stable_point());
 
+    int code = 0;
     cli->request_buf_exec_generic(0, op_ref, &keyrefs[0], num_keys, limit, skip, string_ref(), 0, 0);
     assert(cli->request_send() == 0);
-    assert(cli->response_recv(numflds) == 0);
-    cli->get_next_row();
+    if ((code = cli->response_recv(numflds)) != 0) {
+      fprintf(stderr, "response_recv: %d\n", cli->get_error_code());
+      fprintf(stderr, "response_recv: %d\n", code);
+      fprintf(stderr, "response_recv: %s\n", cli->get_error().c_str());
+      exit(1);   
+    }
     cli->response_buf_remove();
-
     assert(cli->stable_point());
     return Success;
 }
@@ -124,6 +123,44 @@ update(const std::string& tableName, const std::string& key, const std::string& 
 HandlerSocketClient::ResponseCode HandlerSocketClient::
 get(const std::string& tableName, const std::string& key, std::string& value)
 {
+    const std::string dbname = "mapkeeper";
+    const std::string index = "PRIMARY";
+    const std::string fields = "record_key,record_value";
+    const std::string op = "=";
+    const int limit = 1;
+    const int skip = 0;
+    std::vector<string_ref> keyrefs;
+    const string_ref ref(key.data(), key.size());
+    keyrefs.push_back(ref);
+    size_t num_keys = keyrefs.size();
+    const string_ref op_ref(op.data(), op.size());
+    size_t numflds = 0;
+    int code = 0;
+    assert(reader_->stable_point());
+    reader_->request_buf_open_index(10, dbname.c_str(), tableName.c_str(), index.c_str(), fields.c_str());
+    assert(reader_->request_send() == 0);
+    assert(reader_->response_recv(numflds) == 0);
+    reader_->response_buf_remove();
+    assert(reader_->stable_point());
+
+    reader_->request_buf_exec_generic(10, op_ref, &keyrefs[0], num_keys, limit, skip, string_ref(), 0, 0);
+    assert(reader_->request_send() == 0);
+    if ((code = reader_->response_recv(numflds)) != 0) {
+      fprintf(stderr, "response_recv: %d\n", reader_->get_error_code());
+      fprintf(stderr, "response_recv: %d\n", code);
+      fprintf(stderr, "response_recv: %s\n", reader_->get_error().c_str());
+      exit(1);   
+    }
+    assert(numflds == 2);
+    const string_ref *const row = reader_->get_next_row();
+    if (row == 0) {
+        reader_->response_buf_remove();
+        assert(reader_->stable_point());
+        return RecordNotFound;
+    }
+    value.assign(row[1].begin(), row[1].size());
+    reader_->response_buf_remove();
+    assert(reader_->stable_point());
     return Success;
 }
 

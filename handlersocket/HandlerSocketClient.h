@@ -43,6 +43,7 @@ private:
     boost::ptr_map<std::string, dena::hstcpcli_i> readers_;
     boost::ptr_map<std::string, dena::hstcpcli_i> writers_;
     hstcpcli_ptr cli;
+    hstcpcli_ptr reader_;
 };
 
 #endif

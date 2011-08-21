@@ -59,6 +59,18 @@ public:
     }
 
     void get(BinaryResponse& _return, const std::string& mapName, const std::string& key) {
+        initClient();
+        HandlerSocketClient::ResponseCode rc = client_->get(mapName, key, _return.value);
+        if (rc == HandlerSocketClient::TableNotFound) {
+            _return.responseCode = ResponseCode::MapNotFound;
+            return;
+        } else if (rc == HandlerSocketClient::RecordNotFound) {
+            _return.responseCode = ResponseCode::RecordNotFound;
+            return;
+        } else if (rc != HandlerSocketClient::Success) {
+            _return.responseCode = ResponseCode::Error;
+            return;
+        }
         _return.responseCode = ResponseCode::Success;
     }
 
