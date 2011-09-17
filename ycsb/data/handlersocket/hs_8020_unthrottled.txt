@@ -1,0 +1,102 @@
+YCSB Client 0.1
+Command line: -t -db com.yahoo.ycsb.db.MapKeeperClient -P workloads/workloada -p measurementtype=timeseries -p timeseries.granularity=10000 -p operationcount=60000000 -s
+ 0 sec: 0 operations; 
+ 10 sec: 1460803 operations; 145745.09 current ops/sec; [READ AverageLatency(ms)=0.68] 
+ 20 sec: 3035723 operations; 157413.29 current ops/sec; [READ AverageLatency(ms)=0.25] 
+ 30 sec: 4598079 operations; 156188.74 current ops/sec; [READ AverageLatency(ms)=0.19] 
+ 40 sec: 6172958 operations; 157440.67 current ops/sec; [READ AverageLatency(ms)=0.88] 
+ 50 sec: 7721599 operations; 154833.13 current ops/sec; [READ AverageLatency(ms)=0.5] 
+ 60 sec: 9240518 operations; 151846.35 current ops/sec; [READ AverageLatency(ms)=0.45] 
+ 70 sec: 10780992 operations; 154001.2 current ops/sec; [READ AverageLatency(ms)=0.54] 
+ 80 sec: 12305204 operations; 152390.72 current ops/sec; [READ AverageLatency(ms)=0.54] 
+ 90 sec: 13839913 operations; 153424.87 current ops/sec; [READ AverageLatency(ms)=0.3] 
+ 100 sec: 15372658 operations; 153228.53 current ops/sec; [READ AverageLatency(ms)=1] 
+ 110 sec: 16904364 operations; 153139.97 current ops/sec; [READ AverageLatency(ms)=1] 
+ 120 sec: 18421458 operations; 151663.9 current ops/sec; [READ AverageLatency(ms)=0.18] 
+ 130 sec: 19956880 operations; 153496.15 current ops/sec; [READ AverageLatency(ms)=0.58] 
+ 140 sec: 21494590 operations; 153740.25 current ops/sec; [READ AverageLatency(ms)=1.14] 
+ 150 sec: 23027215 operations; 153216.54 current ops/sec; [READ AverageLatency(ms)=0.11] 
+ 160 sec: 24560896 operations; 153322.1 current ops/sec; [READ AverageLatency(ms)=0.55] 
+ 170 sec: 26099308 operations; 153810.44 current ops/sec; [READ AverageLatency(ms)=1.17] 
+ 180 sec: 27617916 operations; 151815.26 current ops/sec; [READ AverageLatency(ms)=0.25] 
+ 190 sec: 29141848 operations; 152347.5 current ops/sec; [READ AverageLatency(ms)=0.6] 
+ 200 sec: 30627574 operations; 148542.89 current ops/sec; [READ AverageLatency(ms)=0.92] 
+ 210 sec: 32113829 operations; 148580.93 current ops/sec; [READ AverageLatency(ms)=0.25] 
+ 220 sec: 33601172 operations; 148689.69 current ops/sec; [READ AverageLatency(ms)=0.53] 
+ 230 sec: 35074112 operations; 147249.83 current ops/sec; [READ AverageLatency(ms)=0.72] 
+ 240 sec: 36554400 operations; 147999.2 current ops/sec; [READ AverageLatency(ms)=0.2] 
+ 250 sec: 38041275 operations; 148642.91 current ops/sec; [READ AverageLatency(ms)=0.59] 
+ 260 sec: 39526162 operations; 148444.17 current ops/sec; [READ AverageLatency(ms)=0.48] 
+ 270 sec: 41011347 operations; 148488.8 current ops/sec; [READ AverageLatency(ms)=0.53] 
+ 280 sec: 42455596 operations; 144381.59 current ops/sec; [READ AverageLatency(ms)=0.18] 
+ 290 sec: 43869144 operations; 141312.41 current ops/sec; [READ AverageLatency(ms)=0.33] 
+ 300 sec: 45236591 operations; 136717.36 current ops/sec; [READ AverageLatency(ms)=1] 
+ 310 sec: 46482020 operations; 124505.55 current ops/sec; [READ AverageLatency(ms)=0.43] 
+ 320 sec: 47699273 operations; 121688.79 current ops/sec; [READ AverageLatency(ms)=0.78] 
+ 330 sec: 48798309 operations; 109881.62 current ops/sec; [READ AverageLatency(ms)=0.84] 
+ 340 sec: 49901526 operations; 110288.61 current ops/sec; [READ AverageLatency(ms)=0] 
+ 350 sec: 51005477 operations; 110361.99 current ops/sec; [READ AverageLatency(ms)=0.55] 
+ 360 sec: 52104789 operations; 109898.23 current ops/sec; [READ AverageLatency(ms)=0.73] 
+ 370 sec: 53209455 operations; 110444.51 current ops/sec; [READ AverageLatency(ms)=0] 
+ 380 sec: 54314991 operations; 110520.44 current ops/sec; [READ AverageLatency(ms)=0.41] 
+ 390 sec: 55387410 operations; 107209.74 current ops/sec; [READ AverageLatency(ms)=0.65] 
+ 400 sec: 56108052 operations; 72049.79 current ops/sec; [READ AverageLatency(ms)=0.1] 
+ 410 sec: 56801617 operations; 69335.7 current ops/sec; [READ AverageLatency(ms)=0] 
+ 420 sec: 57487558 operations; 68573.53 current ops/sec; [READ AverageLatency(ms)=0.18] 
+ 430 sec: 58183205 operations; 69550.79 current ops/sec; [READ AverageLatency(ms)=1] 
+ 440 sec: 58881723 operations; 69830.85 current ops/sec; [READ AverageLatency(ms)=0] 
+ 450 sec: 59575061 operations; 69313.01 current ops/sec; [READ AverageLatency(ms)=0.15] 
+ 456 sec: 60000000 operations; 67794.99 current ops/sec;  
+[OVERALL], RunTime(ms), 456415.0
+[OVERALL], Throughput(ops/sec), 131459.3078667441
+[READ], Operations, 60000000
+[READ], AverageLatency(ms), 0.5716282166666666
+[READ], MinLatency(ms), 0
+[READ], MaxLatency(ms), 309
+[READ], Return=0, 59999260
+[READ], 0, 0.642868834366245
+[READ], 10000, 0.6294359139187985
+[READ], 20000, 0.6344668028528684
+[READ], 30000, 0.6293652633752045
+[READ], 40000, 0.63999072425723
+[READ], 50000, 0.6517775896103486
+[READ], 60000, 0.6431266667835485
+[READ], 70000, 0.6487066136746662
+[READ], 80000, 0.6389245576458533
+[READ], 90000, 0.6400295489414131
+[READ], 100000, 0.6407888762954954
+[READ], 110000, 0.6357921516417753
+[READ], 120000, 0.625914286979928
+[READ], 130000, 0.6250295159386069
+[READ], 140000, 0.6269265970600177
+[READ], 150000, 0.62629548628907
+[READ], 160000, 0.6246844965403526
+[READ], 170000, 0.6332167392168011
+[READ], 180000, 0.6132612566259359
+[READ], 190000, 0.5934689332330618
+[READ], 200000, 0.5931069758050947
+[READ], 210000, 0.5927033376174172
+[READ], 220000, 0.5984942941817224
+[READ], 230000, 0.5955678988570058
+[READ], 240000, 0.5927052407871979
+[READ], 250000, 0.5936278006697154
+[READ], 260000, 0.5934913573927714
+[READ], 270000, 0.5776708241447711
+[READ], 280000, 0.567617771185793
+[READ], 290000, 0.5501187853466865
+[READ], 300000, 0.5003051914674891
+[READ], 310000, 0.4978041544001952
+[READ], 320000, 0.47664344038897116
+[READ], 330000, 0.47515384322409693
+[READ], 340000, 0.4745276026479985
+[READ], 350000, 0.4763935261419773
+[READ], 360000, 0.4741856474753374
+[READ], 370000, 0.47413278161518746
+[READ], 380000, 0.4670692565914157
+[READ], 390000, 0.3285384774356051
+[READ], 400000, 0.3253263903305423
+[READ], 410000, 0.3291214745006074
+[READ], 420000, 0.3243754818369061
+[READ], 430000, 0.3230143481759119
+[READ], 440000, 0.32550016519482167
+[READ], 450000, 0.3209798686875057

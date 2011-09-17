@@ -5,7 +5,9 @@
  * http://yoshinorimatsunobu.blogspot.com/search/label/handlersocket
  */
 #include "MapKeeper.h"
+#include "HandlerSocketClient.h"
 
+#include <boost/thread/tss.hpp>
 #include <protocol/TBinaryProtocol.h>
 #include <server/TThreadedServer.h>
 #include <transport/TServerSocket.h>
@@ -30,10 +32,24 @@ public:
     }
 
     ResponseCode::type addMap(const std::string& mapName) {
+        initClient();
+        HandlerSocketClient::ResponseCode rc = client_->createTable(mapName);
+        if (rc == HandlerSocketClient::TableExists) {
+            return ResponseCode::MapExists;
+        } else if (rc != HandlerSocketClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
     ResponseCode::type dropMap(const std::string& mapName) {
+        initClient();
+        HandlerSocketClient::ResponseCode rc = client_->dropTable(mapName);
+        if (rc == HandlerSocketClient::TableNotFound) {
+            return ResponseCode::MapNotFound;
+        } else if (rc != HandlerSocketClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
@@ -50,6 +66,18 @@ public:
     }
 
     void get(BinaryResponse& _return, const std::string& mapName, const std::string& key) {
+        initClient();
+        HandlerSocketClient::ResponseCode rc = client_->get(mapName, key, _return.value);
+        if (rc == HandlerSocketClient::TableNotFound) {
+            _return.responseCode = ResponseCode::MapNotFound;
+            return;
+        } else if (rc == HandlerSocketClient::RecordNotFound) {
+            _return.responseCode = ResponseCode::RecordNotFound;
+            return;
+        } else if (rc != HandlerSocketClient::Success) {
+            _return.responseCode = ResponseCode::Error;
+            return;
+        }
         _return.responseCode = ResponseCode::Success;
     }
 
@@ -58,16 +86,43 @@ public:
     }
 
     ResponseCode::type insert(const std::string& mapName, const std::string& key, const std::string& value) {
+        initClient();
+        HandlerSocketClient::ResponseCode rc = client_->insert(mapName, key, value);
+        if (rc == HandlerSocketClient::TableNotFound) {
+            return ResponseCode::MapNotFound;
+        } else if (rc == HandlerSocketClient::RecordExists) {
+            return ResponseCode::RecordExists;
+        } else if (rc != HandlerSocketClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
     ResponseCode::type update(const std::string& mapName, const std::string& key, const std::string& value) {
+        initClient();
+        HandlerSocketClient::ResponseCode rc = client_->update(mapName, key, value);
+        if (rc == HandlerSocketClient::TableNotFound) {
+            return ResponseCode::MapNotFound;
+        } else if (rc == HandlerSocketClient::RecordNotFound) {
+            return ResponseCode::RecordNotFound;
+        } else if (rc != HandlerSocketClient::Success) {
+            return ResponseCode::Error;
+        }
         return ResponseCode::Success;
     }
 
     ResponseCode::type remove(const std::string& mapName, const std::string& key) {
         return ResponseCode::Success;
     }
+
+private:
+    void initClient() {
+        if (client_.get() == NULL) {
+            printf("hello world\n");
+            client_.reset(new HandlerSocketClient("localhost", 3306, 9998, 9999));
+        }
+    }
+    boost::thread_specific_ptr<HandlerSocketClient> client_;
 };
 
 int main(int argc, char **argv) {
