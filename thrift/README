@@ -1,6 +1,9 @@
 Requirements:
 ===================
 
+- Java
+    Download java from http://www.oracle.com/technetwork/java/javase/downloads/jdk-7u1-download-513651.html.
+
 - libevent
 
     $ wget http://monkey.org/~provos/libevent-2.0.12-stable.tar.gz
@@ -12,9 +15,18 @@ Requirements:
 
 - thrift
 
-    $ wget http://apache.petsads.us//thrift/0.6.1/thrift-0.6.1.tar.gz
+    $ wget http://archive.apache.org/dist/thrift/0.6.1/thrift-0.6.1.tar.gz
     $ tar xfvz thrift-0.6.1.tar.gz
     $ cd thrift-0.6.1
     $ ./configure --prefix=/usr/local
     $ make
     $ sudo make install
+
+Building
+===================
+
+Run:
+
+$ make
+
+from this directory. It will create gen-cpp/libmapkeeper.so.
