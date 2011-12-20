@@ -101,6 +101,7 @@ update(const std::string& tableName, const std::string& key, const std::string& 
     }
     uint64_t numRows = mysql_affected_rows(&mysql_);
     if (numRows == 0) {
+        fprintf(stderr, "update %s affected %ld rows\n", query.c_str(), numRows);
         return RecordNotFound;
     } else if (numRows != 1) {
         fprintf(stderr, "update affected %ld rows\n", numRows);
@@ -187,7 +188,7 @@ scan(mapkeeper::RecordListResponse& _return, const std::string& tableName, const
     if (maxRecords > 0) {
         query += " limit " + boost::lexical_cast<std::string>(maxRecords);
     }
-    fprintf(stderr, "%s\n", query.c_str());
+//    fprintf(stderr, "%s\n", query.c_str());
 
     int result = mysql_real_query(&mysql_, query.c_str(), query.length());
     if (result != 0) {

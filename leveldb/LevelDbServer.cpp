@@ -32,6 +32,9 @@ using namespace boost::filesystem;
 
 using namespace mapkeeper;
 
+int syncmode;
+int blindinsert;
+int blindupdate;
 class LevelDbServer: virtual public MapKeeperIf {
 public:
     LevelDbServer(const std::string& directoryName) : 
@@ -43,14 +46,15 @@ public:
         options.create_if_missing = false;
         options.error_if_exists = false;
         options.write_buffer_size = 500 * 1048576; // 500MB write buffer
-        options.block_cache = leveldb::NewLRUCache(1500 * 1048576);  // 1.5GB cache
-        
+        options.block_cache = leveldb::NewLRUCache(10000L * 1048576L);  // 1.5GB cache
+        options.compression = leveldb::kNoCompression;
+
         boost::unique_lock< boost::shared_mutex > writeLock(mutex_);;
 
         directory_iterator end_itr;
         for (directory_iterator itr(directoryName); itr != end_itr;itr++) {
             if (is_directory(itr->status())) {
-                std::string mapName = itr->path().filename().string();
+                std::string mapName = itr->path().filename();
                 leveldb::Status status = leveldb::DB::Open(options, itr->path().string(), &db);
                 assert(status.ok());
                 maps_.insert(mapName, db);
@@ -150,13 +154,14 @@ public:
         std::string mapName_ = mapName;
         boost::ptr_map<std::string, leveldb::DB>::iterator itr;
         boost::shared_lock< boost::shared_mutex> readLock(mutex_);;
+
         itr = maps_.find(mapName_);
         if (itr == maps_.end()) {
             return ResponseCode::MapNotFound;
         }
 
         leveldb::WriteOptions options;
-        options.sync = false;
+        options.sync = syncmode ? true : false;
         leveldb::Status status = itr->second->Put(options, key, value);
 
         if (!status.ok()) {
@@ -172,18 +177,21 @@ public:
         if (itr == maps_.end()) {
             return ResponseCode::MapNotFound;
         }
-        std::string recordValue;
-        leveldb::Status status = itr->second->Get(leveldb::ReadOptions(), key, &recordValue);
-        if (status.ok()) {
+	if(!blindinsert) {
+	  std::string recordValue;
+	  leveldb::Status status = itr->second->Get(leveldb::ReadOptions(), key, &recordValue);
+	  if (status.ok()) {
+            printf("Record exists!\n");
             return ResponseCode::RecordExists;
-        } else if (!status.IsNotFound()) {
+	  } else if (!status.IsNotFound()) {
             return ResponseCode::Error;
-        }
-
+	  }
+	}
         leveldb::WriteOptions options;
-        options.sync = false;
-        status = itr->second->Put(options, key, value);
+        options.sync = syncmode ? true : false;
+	leveldb::Status status = itr->second->Put(options, key, value);
         if (!status.ok()) {
+            printf("insert not ok! %s\n", status.ToString().c_str());
             return ResponseCode::Error;
         }
         return ResponseCode::Success;
@@ -197,16 +205,17 @@ public:
             return ResponseCode::MapNotFound;
         }
         std::string recordValue;
-        leveldb::Status status = itr->second->Get(leveldb::ReadOptions(), key, &recordValue);
-        if (status.IsNotFound()) {
+	if(!blindupdate) {
+	  leveldb::Status status = itr->second->Get(leveldb::ReadOptions(), key, &recordValue);
+	  if (status.IsNotFound()) {
             return ResponseCode::RecordNotFound;
-        } else if (!status.ok()) {
+	  } else if (!status.ok()) {
             return ResponseCode::Error;
-        }
-
+	  }
+	}
         leveldb::WriteOptions options;
-        options.sync = false;
-        status = itr->second->Put(options, key, value);
+        options.sync = syncmode ? true : false;
+	leveldb::Status status = itr->second->Put(options, key, value);
         if (!status.ok()) {
             return ResponseCode::Error;
         }
@@ -237,6 +246,10 @@ private:
 };
 
 int main(int argc, char **argv) {
+    if(argc != 4) { printf("Usage: %s <sync:0 or 1> <blindinsert:0 or 1> <blindupdate:0 or 1>\n", argv[0]); }
+    syncmode    = atoi(argv[1]);
+    blindinsert = atoi(argv[2]);
+    blindupdate = atoi(argv[3]);
     int port = 9090;
     shared_ptr<LevelDbServer> handler(new LevelDbServer("data"));
     shared_ptr<TProcessor> processor(new MapKeeperProcessor(handler));
