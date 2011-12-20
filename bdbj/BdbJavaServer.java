@@ -532,7 +532,9 @@ class BdbJavaServer implements MapKeeper.Iface {
             // load config file
             logger.info("Getting ready...");
             Properties prop = new Properties(); 
-            prop.load(new FileInputStream(argv[0]));
+            if(argv.length > 0) {
+               prop.load(new FileInputStream(argv[0]));
+            }
             int port = Integer.parseInt(prop.getProperty("port", "9090"));
             int numThreads = Integer.parseInt(prop.getProperty("num_threads", "32"));
 
@@ -546,6 +548,7 @@ class BdbJavaServer implements MapKeeper.Iface {
             logger.info("Starting server...");
             server.serve();
         } catch (Exception x) {
+            x.printStackTrace();
             logger.error(x.toString() + " " + x.getMessage());
         }
     }
