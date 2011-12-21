@@ -1,0 +1,7 @@
+In order to configure the build, edit Makefile.config to point to the
+location of your copy of thrift.  If you ran thrift's "make install",
+the default (/usr/local) will likely work for you.  Otherwise, point
+it at the top directory of the tarball after doing a "./configure ;
+make" in the thrift directory.
+
+Note that mapkeeper requires the Thrift C++ and Java bindings.

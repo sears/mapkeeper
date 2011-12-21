@@ -1,16 +1,17 @@
+include ../Makefile.config
+
 EXECUTABLE = mapkeeper_mysql
 
 all : thrift
-	g++ -Wall -o $(EXECUTABLE) *cpp -I /usr/local/include/thrift -L /usr/local/lib \
-        -I /usr/local/mysql/include -lboost_thread -lthrift -lthriftnb -levent \
-	-L /usr/local/mysql/lib -lmysqlclient -I ../thrift/gen-cpp -L ../thrift/gen-cpp -lmapkeeper
+	g++ -Wall -o $(EXECUTABLE) *cpp -I $(THRIFT_DIR)/include/thrift -I $(THRIFT_DIR)/include -L $(THRIFT_DIR)/lib \
+        -I /usr/local/mysql/include -I /usr/include/mysql -lboost_thread -lthrift -lthriftnb -levent \
+	-L /usr/local/mysql/lib -lmysqlclient -I ../thrift/gen-cpp -L ../thrift/gen-cpp -lmapkeeper \
+	-Wl,-rpath,\$$ORIGIN/../thrift/gen-cpp -Wl,-rpath,$(THRIFT_DIR)/lib
 
 thrift:
 	make -C ../thrift
-run : 
-	LD_LIBRARY_PATH=/usr/local/mysql/lib:/usr/local/lib:../thrift/gen-cpp ./$(EXECUTABLE)
 clean :
-	- rm $(THRIFT_SRC) $(EXECUTABLE) *o 
+	- rm -rf $(THRIFT_SRC) $(EXECUTABLE) *.o 
 
 wipe :
 	- mysql -uroot -e "drop database if exists mapkeeper"

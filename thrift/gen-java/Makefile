@@ -1,6 +1,10 @@
+include ../../Makefile.config
+
+THRIFT_JAR = $(wildcard $(THRIFT_DIR)/lib/java/build/libthrift*[0-9].jar)
+
 all:
-	find .|grep java|xargs javac -classpath ../../lib/libthrift-0.6.1.jar:../../lib/slf4j-api-1.5.8.jar
-	jar cvf ../../lib/mapkeeper.jar .
+	javac -cp $(THRIFT_JAR):../../lib/slf4j-api-1.5.8.jar `find . -name *.java`
+	jar cf ../../lib/mapkeeper.jar .
 
 clean:
 	rm -rf com
