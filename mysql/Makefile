@@ -10,6 +10,10 @@ all : thrift
 
 thrift:
 	make -C ../thrift
+
+run:
+	./$(EXECUTABLE)
+
 clean :
 	- rm -rf $(THRIFT_SRC) $(EXECUTABLE) *.o 
 
