@@ -1,7 +1,7 @@
 include ../../Makefile.config
 
 CC=g++
-CFLAGS=-c -Wall -I $(THRIFT_DIR)/include/thrift
+CFLAGS=-c -Wall -I $(THRIFT_DIR)/include/thrift -I $(THRIFT_DIR)/include
 LDFLAGS = -L $(THRIFT_DIR)/lib -lthrift
 SOURCES = mapkeeper_constants.cpp \
           MapKeeper.cpp \
@@ -9,14 +9,19 @@ SOURCES = mapkeeper_constants.cpp \
 
 OBJECTS=$(SOURCES:.cpp=.o)
 LIB = libmapkeeper.so
+A = libmapkeeper.a
 
-all: $(SOURCES) $(LIB)
+all: $(SOURCES) $(LIB) $(A)
 
 $(LIB): $(OBJECTS) 
-	$(CC) -shared -Wl,-soname,$@ -o $@ *.o
+	$(CC) -shared -Wl,-soname,$@ -o $@ $^
+$(A): $(OBJECTS)
+	cp $(THRIFT_DIR)/lib/libthrift.a $@
+	ar rs $@ $^
 
-.cpp.o:
-	$(CC) $(CFLAGS) -fPIC -c $< -o $@
+%.o : %.cpp
+	$(CC) $(CFLAGS) -fPIC -c -o $@ $^
+#.cpp.o:
 
 clean:
 	rm -rf *[cpp,h,o]
