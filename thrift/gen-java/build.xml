@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="mapkeeper" default="compile" basedir=".">
+    <property name="src.dir"     value="."/>
+    <property name="lib.dir"     value="lib"/>
+    <property name="build.dir"   value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+
+    <path id="build.classpath">
+        <fileset dir="${lib.dir}">
+          <include name="**/*.jar" />
+        </fileset>
+    </path>
+    <target name="compile">
+        <mkdir dir="${classes.dir}"/>
+        <javac includeantruntime="false" srcdir="${src.dir}" destdir="${classes.dir}" classpathref="build.classpath" deprecation="on" debug="true">
+  <!--        <compilerarg value="-Xlint:unchecked"/> -->
+        </javac>
+   </target>
+   <target name ="makejar" depends="compile" description="Create a self-contained mapkeeper jar">
+     <jar jarfile="mapkeeper.jar" includes="**/*.class" basedir="${classes.dir}">
+       <restrict>
+	 <name name="**/*.class"/>
+	 <archives>
+	   <zips>
+	     <fileset dir="${lib.dir}" includes="**/*.jar"/>
+	   </zips>
+	 </archives>
+       </restrict>
+       <!--	    <manifest>
+	   <attribute name="Main-Class"
+			 value="com.yahoo.mapkeeper.None"/>
+			 </manifest> -->
+     </jar>
+   </target>
+</project>
