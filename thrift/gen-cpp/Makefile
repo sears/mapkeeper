@@ -1,5 +1,7 @@
 include ../../Makefile.config
 
+UNAME = `uname`
+
 CC=g++
 CFLAGS=-c -Wall -I $(THRIFT_DIR)/include/thrift -I $(THRIFT_DIR)/include
 LDFLAGS = -L $(THRIFT_DIR)/lib -lthrift
@@ -8,13 +10,19 @@ SOURCES = mapkeeper_constants.cpp \
           mapkeeper_types.cpp \
 
 OBJECTS=$(SOURCES:.cpp=.o)
-LIB = libmapkeeper.so
 A = libmapkeeper.a
+
+ifeq ($(UNAME),"Linux")
+LIB = libmapkeeper.so
+endif
 
 all: $(SOURCES) $(LIB) $(A)
 
+ifeq ($(UNAME),"Linux")
 $(LIB): $(OBJECTS) 
 	$(CC) -shared -Wl,-soname,$@ -o $@ $^
+endif
+
 $(A): $(OBJECTS)
 	cp $(THRIFT_DIR)/lib/libthrift.a $@
 	ar rs $@ $^
