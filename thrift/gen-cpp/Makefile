@@ -12,13 +12,13 @@ SOURCES = mapkeeper_constants.cpp \
 OBJECTS=$(SOURCES:.cpp=.o)
 A = libmapkeeper.a
 
-ifeq ($(UNAME),"Linux")
+ifeq ($(shell uname), Linux)
 LIB = libmapkeeper.so
 endif
 
 all: $(SOURCES) $(LIB) $(A)
 
-ifeq ($(UNAME),"Linux")
+ifeq ($(shell uname), Linux)
 $(LIB): $(OBJECTS) 
 	$(CC) -shared -Wl,-soname,$@ -o $@ $^
 endif
